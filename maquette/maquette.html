@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Médiathèque de quartier · maquette 3D cliquable</title>
+<style>
+  :root{--fond:#F1EDE4;--encre:#2A2622;--doux:#6F675D;--trait:#DDD6C8;--carte:#FBF9F4;--accent:#7A68B3}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--fond);color:var(--encre);overflow:hidden;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none}
+  header{position:fixed;left:24px;top:22px;pointer-events:none}
+  h1{margin:0;font-size:19px;font-weight:650;letter-spacing:-.01em}
+  header p{margin:3px 0 0;font-size:13px;color:var(--doux)}
+  button{font:inherit;color:inherit;cursor:pointer}
+  #vue{position:fixed;right:24px;top:22px;padding:9px 15px;border-radius:999px;border:1px solid var(--trait);background:var(--carte);
+    font-size:14px;font-weight:600;box-shadow:0 2px 10px rgba(42,38,34,.07)}
+  #vue:hover{border-color:var(--accent)}
+  #fiche{position:fixed;right:24px;top:76px;width:300px;padding:17px 19px 16px;border-radius:14px;background:var(--carte);
+    border:1px solid var(--trait);box-shadow:0 10px 30px rgba(42,38,34,.12)}
+  #fiche[hidden]{display:block;pointer-events:none}
+  #fiche h2{margin:0 26px 2px 0;font-size:18px;font-weight:650;letter-spacing:-.01em;line-height:1.2}
+  #fiche .niv{font-size:13px;color:var(--doux)}
+  #fiche .surf{margin:9px 0 9px;font-size:30px;font-weight:650;letter-spacing:-.02em;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+  #fiche .surf small{font-size:15px;font-weight:600;margin-left:3px}
+  #fiche dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 11px;font-size:14px;line-height:1.3}
+  #fiche dt{color:var(--doux)}#fiche dd{margin:0}
+  #fermer{position:absolute;right:9px;top:9px;width:30px;height:30px;border:0;background:none;font-size:19px;line-height:1;color:var(--doux)}
+  #liste{position:fixed;left:24px;top:84px;bottom:56px;width:210px;overflow:auto;font-size:14px}
+  #liste h3{margin:13px 0 4px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--doux)}
+  #liste button{display:block;width:100%;text-align:left;padding:4px 8px;margin-left:-8px;border:0;border-radius:7px;background:none}
+  #liste button:hover{background:rgba(122,104,179,.12)}
+  #liste button.actif{background:var(--accent);color:#fff}
+  footer{position:fixed;left:24px;right:24px;bottom:15px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:12px;color:var(--doux);pointer-events:none}
+  footer a{color:var(--encre);font-weight:600;pointer-events:auto;white-space:nowrap}
+  .pin{position:fixed;left:0;top:0;padding:4px 9px;border-radius:7px;background:var(--encre);color:#fff;font-size:13px;font-weight:600;white-space:nowrap;pointer-events:none;
+    transform:translate(-50%,-140%);opacity:0;will-change:left,top}
+  .pin.vu{opacity:1}
+  #erreur{position:fixed;inset:auto 24px 50%;display:none;padding:18px;border-radius:12px;background:var(--carte);border:1px solid var(--trait);font-size:15px;line-height:1.4}
+  @media (max-width:760px){
+    header{left:20px;top:18px}h1{font-size:16px}header p{font-size:12px}
+    #vue{right:20px;top:16px;padding:8px 13px;font-size:13px}
+    #liste{display:none}
+    #fiche{left:20px;right:20px;top:auto;bottom:46px;width:auto;padding:12px 15px 11px}
+    #fiche h2{font-size:17px;margin-right:96px}#fiche .niv{font-size:12px}
+    #fiche .surf{position:absolute;right:42px;top:12px;margin:0;font-size:25px}#fiche .surf small{font-size:13px}
+    #fiche dl{font-size:13px;gap:1px 9px;margin-top:6px}
+    footer{left:20px;right:20px;bottom:13px;font-size:11px}
+  }
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+            "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<header><h1>Médiathèque de quartier</h1><p>Clique sur un élément · fais tourner</p></header>
+<button id="vue" type="button" aria-pressed="false">Ouvrir le bâtiment</button>
+<nav id="liste" aria-label="Éléments du bâtiment"></nav>
+<aside id="fiche" hidden aria-live="polite">
+  <button id="fermer" type="button" aria-label="Fermer la fiche">×</button>
+  <h2 id="f-nom"></h2><div class="niv" id="f-niv"></div>
+  <div class="surf"><span id="f-surf"></span><small>m²</small></div>
+  <dl><dt>Usage</dt><dd id="f-usage"></dd><dt>Matériau</dt><dd id="f-mat"></dd><dt>Hauteur</dt><dd id="f-haut"></dd></dl>
+</aside>
+<div class="pin" id="pin"></div>
+<footer><span>Maquette de présentation, ni à l'échelle garantie ni BIM.</span><a id="dl" download="maquette.html" href="#">Télécharger le fichier</a></footer>
+<div id="erreur"></div>
+
+<script>
+  // Si Three.js ne se charge pas (pas de réseau, CDN bloqué), on le dit au lieu de laisser une page vide.
+  window.__echec = (msg) => { const e = document.getElementById("erreur"); e.style.display = "block"; e.textContent = msg; };
+  window.addEventListener("error", (ev) => { if (ev.target && ev.target.tagName === "SCRIPT") window.__echec("Three.js n'a pas pu se charger : vérifie ta connexion, puis recharge la page."); }, true);
+  setTimeout(() => { if (!window.maquette) window.__echec("La 3D ne s'affiche pas. Vérifie ta connexion, ou ouvre ce fichier dans Chrome, Edge, Safari ou Firefox."); }, 12000);
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+/* ---------- Le tableau de surfaces : tout part de là. Coordonnées en mètres, x vers l'est, z vers le sud. ---------- */
+const NIVEAUX = {
+  rdc:   { nom: "Rez-de-chaussée", haut: 3.6 },
+  etage: { nom: "Étage", haut: 3.3 },
+  toit:  { nom: "Toiture", haut: 0 },
+};
+const PIECES = [
+  { id: "hall",    nom: "Hall d'accueil",        niveau: "rdc",   r: [-10, -5.5, -4, 5.5], usage: "Accueil, prêt et retour des livres", mat: "Béton ciré, banque en chêne", sol: 0xD9D2C4 },
+  { id: "lecture", nom: "Salle de lecture",      niveau: "rdc",   r: [-4, -1, 10, 5.5],    usage: "Lecture et rayonnages, 40 places", mat: "Parquet de chêne, plafond bois", sol: 0xD6C3A2 },
+  { id: "atelier", nom: "Atelier",               niveau: "rdc",   r: [2, -5.5, 10, -1],    usage: "Ateliers d'écriture et d'enfants", mat: "Linoléum, murs en bois clair", sol: 0xCFCFC4 },
+  { id: "locaux",  nom: "Sanitaires et locaux",  niveau: "rdc",   r: [-4, -5.5, 2, -1],    usage: "Sanitaires, ménage, technique", mat: "Grès cérame clair", sol: 0xC9C6BC },
+  { id: "palier",  nom: "Palier",                niveau: "etage", r: [-10, -5.5, -4, -1],  usage: "Arrivée de l'escalier, attente", mat: "Béton ciré", sol: 0xD9D2C4 },
+  { id: "bureaux", nom: "Bureaux",               niveau: "etage", r: [-10, -1, -4, 5.5],   usage: "Équipe de la médiathèque, 6 postes", mat: "Moquette de laine, cloisons vitrées", sol: 0xCBC8BE },
+  { id: "salle",   nom: "Salle polyvalente",     niveau: "etage", r: [-4, -5.5, 4, 5.5],   usage: "Conférences et projections, 80 places", mat: "Parquet de chêne, acoustique bois", sol: 0xD6C3A2 },
+];
+const AUTRES = [
+  { id: "terrasse",   nom: "Terrasse",                   niveau: "etage", surface: 6 * 11,        usage: "Lecture en plein air, sur le toit du rez-de-chaussée", mat: "Platelage de pin, garde-corps en acier", haut: "à ciel ouvert" },
+  { id: "toiture",    nom: "Toiture",                    niveau: "toit",  surface: 14 * 11,       usage: "Couvre l'étage, trois sheds pour la lumière", mat: "Zinc pré-patiné", haut: "—" },
+  { id: "fsud",       nom: "Façade sud",                 niveau: "rdc",   surface: 20 * 3.6,      usage: "Vitrine sur le jardin, entrée", mat: "Vitrage clair, cadres en acier fin", haut: "3,60 m" },
+  { id: "fnord",      nom: "Façade nord",                niveau: "rdc",   surface: 20 * 3.6,      usage: "Côté rue, peu d'ouvertures", mat: "Béton clair banché", haut: "3,60 m" },
+  { id: "fest",       nom: "Façade est",                 niveau: "rdc",   surface: 11 * 3.6,      usage: "Lumière du matin sur la salle de lecture", mat: "Béton clair et grande baie", haut: "3,60 m" },
+  { id: "fouest",     nom: "Façade ouest",               niveau: "rdc",   surface: 11 * 3.6,      usage: "Mur plein, abrite le hall", mat: "Béton clair banché", haut: "3,60 m" },
+  { id: "fetage",     nom: "Façades de l'étage",         niveau: "etage", surface: 50 * 3.3,      usage: "Filtre le soleil de la salle et des bureaux", mat: "Lames verticales de mélèze", haut: "3,30 m" },
+];
+const ELEMENTS = new Map();
+for (const p of PIECES) ELEMENTS.set(p.id, { ...p, surface: (p.r[2] - p.r[0]) * (p.r[3] - p.r[1]), haut: NIVEAUX[p.niveau].haut.toFixed(2).replace(".", ",") + " m" });
+for (const a of AUTRES) ELEMENTS.set(a.id, a);
+
+/* ---------- Scène ---------- */
+const FOND = 0xF1EDE4;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(FOND);
+const FOV = 30;
+const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 600);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minPolarAngle = 0.25;
+controls.maxPolarAngle = 1.45;
+controls.autoRotate = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+controls.autoRotateSpeed = 0.55;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d0bf, 1.75));
+const soleil = new THREE.DirectionalLight(0xfff1dd, 2.1);
+soleil.position.set(26, 44, 30);
+soleil.castShadow = true;
+soleil.shadow.mapSize.set(2048, 2048);
+Object.assign(soleil.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 5, far: 130 });
+soleil.shadow.bias = -0.0004;
+soleil.shadow.normalBias = 0.03;
+scene.add(soleil);
+
+const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0, ...o });
+const MAT = {
+  socle: M(0xE6E0D3), allee: M(0xD9D2C2), beton: M(0xDDD8CD), cloison: M(0xF3EFE7), dalle: M(0xCFC9BC),
+  bois: M(0xB39770), pin: M(0xCDB48C), zinc: M(0x8F8E88, { roughness: 0.7 }), acier: M(0x4A4845, { roughness: 0.6 }),
+  meuble: M(0xBFAE93), blanc: M(0xEDE9DF), feuille: M(0xA7B096), tronc: M(0x7D7468), humain: M(0x45413C),
+  verre: new THREE.MeshStandardMaterial({ color: 0xB9CCCC, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.38, depthWrite: false }),
+};
+const ACCENT = new THREE.Color(0x7A68B3);
+const MAT_ACCENT = M(0x7A68B3);
+const MAT_ACCENT_VERRE = new THREE.MeshStandardMaterial({ color: 0x7A68B3, transparent: true, opacity: 0.55, depthWrite: false });
+const MAT_VOLUME = new THREE.MeshStandardMaterial({ color: 0x7A68B3, transparent: true, opacity: 0.24, depthWrite: false, side: THREE.DoubleSide });
+
+const pickFerme = [];                // ce qu'on clique quand le bâtiment est fermé : façades, toit, terrasse
+const pickOuvert = [];               // ce qu'on clique quand il est ouvert : volumes des pièces, toit, terrasse
+const pickSols = [];                 // ouvert : le sol d'une pièce passe avant le volume de la pièce devant elle
+const parId = new Map();             // id -> maillages à colorer
+
+function pave(w, h, d, mat, x, y, z, parent, id) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y + h / 2, z);
+  m.castShadow = mat !== MAT.verre;
+  m.receiveShadow = true;
+  parent.add(m);
+  if (id) {
+    m.userData.id = id;
+    m.userData.base = mat;
+    if (!parId.has(id)) parId.set(id, []);
+    parId.get(id).push(m);
+  }
+  return m;
+}
+// Un mur entre deux points, sur un axe.
+function mur(x1, z1, x2, z2, h, ep, mat, parent, id, y = 0) {
+  const lx = Math.abs(x2 - x1), lz = Math.abs(z2 - z1);
+  return pave(lx > 0 ? lx : ep, h, lz > 0 ? lz : ep, mat, (x1 + x2) / 2, y, (z1 + z2) / 2, parent, id);
+}
+// Une baie toute hauteur : vitrage, montants tous les `pas` mètres, seuil et linteau.
+function baie(x1, z1, x2, z2, h, pas, parent, id) {
+  const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.round(L / pas));
+  const reg = (m) => { pickFerme.push(m); return m; };
+  reg(mur(x1, z1, x2, z2, h, 0.05, MAT.verre, parent, id));
+  reg(mur(x1, z1, x2, z2, 0.14, 0.14, MAT.acier, parent, id));
+  reg(mur(x1, z1, x2, z2, 0.14, 0.14, MAT.acier, parent, id, h - 0.14));
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, x = x1 + (x2 - x1) * t, z = z1 + (z2 - z1) * t;
+    reg(pave(0.07, h, 0.07, MAT.acier, x, 0, z, parent, id));
+  }
+}
+
+/* ---------- Site ---------- */
+const site = new THREE.Group(); scene.add(site);
+const sol = new THREE.Mesh(new THREE.CircleGeometry(300, 48), new THREE.ShadowMaterial({ opacity: 0.1 }));
+sol.rotation.x = -Math.PI / 2; sol.position.y = -0.62; sol.receiveShadow = true; site.add(sol);
+pave(36, 0.6, 26, MAT.socle, 0, -0.6, 0, site);
+pave(5, 0.03, 6.8, MAT.allee, -7, 0, 9.4, site);
+pave(14, 0.03, 2, MAT.allee, 3, 0, 7.4, site);
+const arbre = (x, z, r, h) => {
+  pave(0.22, h, 0.22, MAT.tronc, x, 0, z, site);
+  const c = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 2), MAT.feuille);
+  c.position.set(x, h + r * 0.65, z); c.castShadow = true; c.receiveShadow = true; site.add(c);
+};
+arbre(12, 9.5, 1.5, 2.7); arbre(15, 6.5, 1.15, 2.2); arbre(-14.8, 9.2, 1.7, 3.0); arbre(-15, 2.5, 1.2, 2.3); arbre(14.8, -8.6, 1.5, 2.8); arbre(-14.5, -9.3, 1.3, 2.5);
+const humain = (x, z) => {
+  pave(0.42, 1.2, 0.24, MAT.humain, x, 0.0, z, site);
+  const t = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), MAT.humain); t.position.set(x, 1.45, z); t.castShadow = true; site.add(t);
+};
+humain(-6, 8.6); humain(-7.8, 10.6); humain(4, 7.5); humain(9, 8.2);
+
+/* ---------- Le bâtiment : trois groupes qui s'écartent ---------- */
+const g0 = new THREE.Group(), g1 = new THREE.Group(), g2 = new THREE.Group();
+scene.add(g0, g1, g2);
+const w0 = new THREE.Group(), w1 = new THREE.Group();   // murs de chaque niveau : ils se coupent à l'ouverture
+g0.add(w0); g1.add(w1);
+const H0 = 3.3, DALLE = 0.3, H1 = 3.0;
+const Y1 = H0, Y2 = H0 + DALLE + H1;
+g1.position.y = Y1; g2.position.y = Y2;
+const POSE = 0.06;
+w1.position.y = DALLE + POSE;
+
+const sols = new Map(), volumes = new Map();
+for (const p of PIECES) {
+  const [x1, z1, x2, z2] = p.r, w = x2 - x1, d = z2 - z1, cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const groupe = p.niveau === "rdc" ? g0 : g1, y = p.niveau === "rdc" ? 0 : DALLE;
+  const s = pave(w - 0.02, POSE, d - 0.02, M(p.sol), cx, y, cz, groupe);
+  s.userData.id = p.id;
+  sols.set(p.id, s);
+  pickSols.push(s);
+  const hv = p.niveau === "rdc" ? H0 : H1;
+  const v = new THREE.Mesh(new THREE.BoxGeometry(w - 0.1, hv, d - 0.1), MAT_VOLUME);
+  v.position.set(cx, hv / 2, cz);
+  v.userData.id = p.id; v.userData.volume = true; v.visible = false;
+  (p.niveau === "rdc" ? w0 : w1).add(v);
+  volumes.set(p.id, v);
+  pickOuvert.push(v);
+}
+const ep = 0.28;
+/* Rez-de-chaussée */
+const regMur = (m) => { pickFerme.push(m); return m; };
+regMur(mur(-10, -5.5, 10, -5.5, H0, ep, MAT.beton, w0, "fnord"));
+regMur(mur(-10, -5.5, -10, 5.5, H0, ep, MAT.beton, w0, "fouest"));
+regMur(mur(10, -5.5, 10, -2.5, H0, ep, MAT.beton, w0, "fest"));
+baie(10, -2.5, 10, 4, H0, 1.3, w0, "fest");
+regMur(mur(10, 4, 10, 5.5, H0, ep, MAT.beton, w0, "fest"));
+regMur(mur(-10, 5.5, -9.4, 5.5, H0, ep, MAT.beton, w0, "fsud"));
+baie(-9.4, 5.5, 8.8, 5.5, H0, 1.4, w0, "fsud");
+regMur(mur(8.8, 5.5, 10, 5.5, H0, ep, MAT.beton, w0, "fsud"));
+for (const [x, y] of [[-3, 1.15], [0.6, 1.15], [6.2, 1.15]]) regMur(pave(1.2, y, 0.06, MAT.acier, x, 0.9, -5.67, w0, "fnord"));
+mur(-4, -5.5, -4, 5.5, H0, 0.16, MAT.cloison, w0);
+mur(-4, -1, 10, -1, H0, 0.16, MAT.cloison, w0);
+mur(2, -5.5, 2, -1, H0, 0.16, MAT.cloison, w0);
+for (let i = 0; i < 17; i++) pave(1.1, (i + 1) * (H0 / 17), 0.27, MAT.dalle, -9.2, POSE, 3.1 - i * 0.26, w0);
+pave(3.4, 1.05, 0.7, MAT.bois, -6.2, POSE, 2.2, w0);
+for (const [x, z] of [[1, 3.8], [5, 3.8], [1, 1.6], [5, 1.6]]) {
+  pave(2.4, 0.75, 1.0, MAT.bois, x, POSE, z, w0);
+}
+for (let i = 0; i < 5; i++) pave(2.3, 1.9, 0.45, MAT.meuble, -2.5 + i * 2.75, POSE, -0.5, w0);
+pave(4.2, 0.75, 1.4, MAT.blanc, 6, POSE, -3.2, w0);
+for (const x of [-3, -1.2, 0.6]) pave(1.3, 2.1, 0.08, MAT.blanc, x, POSE, -3, w0);
+/* Plancher de l'étage et terrasse */
+const dalle = pave(20.3, DALLE, 11.3, MAT.dalle, 0, 0, 0, g1, "fetage");
+pickFerme.push(dalle);
+const deck = pave(5.8, POSE, 10.8, MAT.pin, 7, DALLE, 0, g1, "terrasse");
+pickFerme.push(deck); pickOuvert.push(deck);
+for (let i = 0; i <= 14; i++) pave(0.04, 0.012, 10.8, MAT.bois, 4.3 + i * 0.4, DALLE + POSE, 0, g1);
+const gc = (x1, z1, x2, z2) => {
+  const a = mur(x1, z1, x2, z2, 0.05, 0.05, MAT.acier, g1, "terrasse", DALLE + POSE + 1.05);
+  const L = Math.hypot(x2 - x1, z2 - z1), n = Math.round(L / 1.6);
+  pickFerme.push(a);
+  for (let i = 0; i <= n; i++) pickFerme.push(pave(0.04, 1.05, 0.04, MAT.acier, x1 + (x2 - x1) * i / n, DALLE + POSE, z1 + (z2 - z1) * i / n, g1, "terrasse"));
+};
+gc(4, -5.4, 9.9, -5.4); gc(9.9, -5.4, 9.9, 5.4); gc(9.9, 5.4, 4, 5.4);
+for (const z of [-3.6, 3.4]) { pickFerme.push(pave(4.2, 0.5, 0.7, MAT.dalle, 8.8 - 1.9, DALLE + POSE, z + (z < 0 ? -1.2 : 1.2), g1, "terrasse")); arbreBac(6.9, z + (z < 0 ? -1.2 : 1.2)); }
+function arbreBac(x, z) {
+  const c = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 2), MAT.feuille);
+  c.position.set(x, DALLE + POSE + 0.78, z); c.castShadow = true; g1.add(c);
+}
+/* Étage : parois, salle, bureaux */
+mur(-4, -5.5, -4, 5.5, H1, 0.16, MAT.cloison, w1);
+mur(-10, -1, -4, -1, H1, 0.16, MAT.cloison, w1);
+baie(-9.8, 5.5, 3.8, 5.5, H1, 1.7, w1, "fetage");
+baie(-9.8, -5.5, 3.8, -5.5, H1, 1.7, w1, "fetage");
+baie(-10, -5.3, -10, 5.3, H1, 1.7, w1, "fetage");
+baie(4, -5.3, 4, 5.3, H1, 1.7, w1, "fetage");
+const lames = (x1, z1, x2, z2, nMax) => {
+  const L = Math.hypot(x2 - x1, z2 - z1), n = Math.round(L / 0.42);
+  for (let i = 0; i <= Math.min(n, nMax); i++) {
+    const t = i / n;
+    const axeX = Math.abs(x2 - x1) > 0;
+    pickFerme.push(pave(axeX ? 0.1 : 0.2, H1, axeX ? 0.2 : 0.1, MAT.bois, x1 + (x2 - x1) * t, 0, z1 + (z2 - z1) * t, w1, "fetage"));
+  }
+};
+lames(-10.15, 5.75, 4.15, 5.75, 99); lames(-10.15, -5.75, 4.15, -5.75, 99); lames(-10.25, -5.65, -10.25, 5.65, 99);
+lames(4.25, -5.65, 4.25, -2.6, 99); lames(4.25, 2.6, 4.25, 5.65, 99);
+for (let r = 0; r < 5; r++) for (let c = 0; c < 9; c++) pave(0.42, 0.45, 0.42, MAT.meuble, -3 + c * 0.72, 0, -3.6 + r * 1.2 + 1.4, w1);
+pave(5, 0.5, 0.7, MAT.bois, 0, 0, -4.7, w1);
+for (const [x, z] of [[-8.3, 1], [-5.7, 1], [-8.3, 3.8], [-5.7, 3.8]]) pave(1.7, 0.75, 0.8, MAT.blanc, x, 0, z, w1);
+pave(1.2, 0.9, 2.4, MAT.meuble, -7, 0, -3.2, w1);
+/* Toiture */
+const toit = pave(14.5, 0.26, 11.5, MAT.zinc, -3, 0, 0, g2, "toiture");
+pickFerme.push(toit); pickOuvert.push(toit);
+for (const [cx, cz] of [[-7, 0], [-3, 0], [1, 0]]) {
+  const s = pave(2.2, 0.55, 6.4, MAT.blanc, cx, 0.26, cz, g2, "toiture");
+  s.rotation.z = 0;
+  const v = pave(2.0, 0.04, 6.2, MAT.verre, cx, 0.82, cz, g2, "toiture");
+  pickFerme.push(s, v); pickOuvert.push(s, v);
+}
+/* Lignes de rappel de la vue éclatée */
+const rappelMat = new THREE.LineBasicMaterial({ color: 0x8b8377, transparent: true, opacity: 0 });
+const rappels = [[-10, -5.5], [-10, 5.5], [4, -5.5], [4, 5.5], [10, -5.5], [10, 5.5]].map(([x, z]) => {
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, 0, z), new THREE.Vector3(x, 1, z)]);
+  const l = new THREE.Line(g, rappelMat.clone()); l.userData = { x, z }; l.scale.y = 1; scene.add(l); return l;
+});
+
+/* ---------- Interface ---------- */
+const $ = (id) => document.getElementById(id);
+const liste = $("liste"), fiche = $("fiche"), pin = $("pin");
+const boutons = new Map();
+const GROUPES = [["Rez-de-chaussée", ["hall", "lecture", "atelier", "locaux"]], ["Étage", ["palier", "bureaux", "salle", "terrasse"]], ["Enveloppe", ["toiture", "fsud", "fnord", "fest", "fouest", "fetage"]]];
+for (const [titre, ids] of GROUPES) {
+  const h = document.createElement("h3"); h.textContent = titre; liste.append(h);
+  for (const id of ids) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = ELEMENTS.get(id).nom;
+    b.addEventListener("click", () => choisir(id, true)); liste.append(b); boutons.set(id, b);
+  }
+}
+const nb = (x) => (Number.isInteger(x) ? String(x) : x.toFixed(1).replace(".", ","));
+$("dl").href = location.href.split("#")[0];
+
+let ouvert = false, ex = 0, choisi = null, survol = null;
+
+function peindre(id, on) {
+  const p = sols.get(id);
+  if (p) {
+    p.material.color.set(on ? 0x9A8BC9 : ELEMENTS.get(id).sol);
+    volumes.get(id).visible = on;
+  }
+  for (const m of parId.get(id) || []) {
+    if (m.userData.base === MAT.verre) m.material = on ? MAT_ACCENT_VERRE : MAT.verre;
+    else m.material = on ? MAT_ACCENT : m.userData.base;
+  }
+}
+function choisir(id, depuisListe = false) {
+  if (choisi) { peindre(choisi, false); boutons.get(choisi)?.classList.remove("actif"); }
+  choisi = id;
+  document.body.dataset.choisi = id || "";
+  if (!id) { fiche.hidden = true; return; }
+  const e = ELEMENTS.get(id);
+  peindre(id, true);
+  boutons.get(id)?.classList.add("actif");
+  $("f-nom").textContent = e.nom;
+  $("f-niv").textContent = NIVEAUX[e.niveau].nom;
+  $("f-surf").textContent = nb(e.surface) + " ";
+  $("f-usage").textContent = e.usage;
+  $("f-mat").textContent = e.mat;
+  $("f-haut").textContent = e.haut;
+  fiche.hidden = false;
+  if (depuisListe && !ouvert && sols.has(id)) basculer(true);
+}
+function basculer(v = !ouvert) {
+  ouvert = v;
+  $("vue").textContent = ouvert ? "Fermer le bâtiment" : "Ouvrir le bâtiment";
+  $("vue").setAttribute("aria-pressed", String(ouvert));
+  if (!ouvert && choisi && sols.has(choisi)) choisir(null);
+  cadrer();
+}
+$("vue").addEventListener("click", () => basculer());
+$("fermer").addEventListener("click", () => choisir(null));
+addEventListener("keydown", (e) => { if (e.key === "Escape") choisir(null); });
+
+/* ---------- Cadrage : on garde tout dans l'écran, quelle que soit sa forme ---------- */
+const cible = new THREE.Vector3(0, 2.6, 0);
+controls.target.copy(cible);
+let trans = null;
+function distanceIdeale(o) {
+  const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2)), asp = camera.aspect;
+  const H = o ? 33 : 17, L = asp < 0.8 ? 30 : 38;
+  return Math.max(H / 2 / t, L / 2 / (t * asp)) + 4;
+}
+function cadrer(duree = 1.1) {
+  trans = { t: 0, duree, deC: controls.target.clone(), aC: new THREE.Vector3(0, ouvert ? 9.4 : 2.6, 0), deD: camera.position.distanceTo(controls.target), aD: distanceIdeale(ouvert) };
+}
+function dimensionner() {
+  const W = innerWidth, H = innerHeight;
+  renderer.setSize(W, H, false);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+  controls.minDistance = distanceIdeale(false) * 0.35;
+  controls.maxDistance = distanceIdeale(true) * 1.8;
+}
+addEventListener("resize", () => { dimensionner(); cadrer(0.3); });
+dimensionner();
+{
+  const d = distanceIdeale(false), az = THREE.MathUtils.degToRad(38), po = THREE.MathUtils.degToRad(66);
+  camera.position.set(Math.sin(az) * Math.sin(po) * d, cible.y + Math.cos(po) * d, Math.cos(az) * Math.sin(po) * d);
+  camera.lookAt(cible);
+}
+
+/* ---------- Clic et survol : on distingue un clic d'un glissé ---------- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function viser(cx, cy) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  if (ex <= 0.5) {
+    const hits = ray.intersectObjects(pickFerme, false);
+    return hits.length ? hits[0].object.userData.id : null;
+  }
+  const dessus = ray.intersectObjects([...pickSols, ...pickOuvert.filter((m) => !m.userData.volume)], false);
+  if (dessus.length) return dessus[0].object.userData.id;
+  const hits = ray.intersectObjects(pickOuvert, false);
+  return hits.length ? hits[0].object.userData.id : null;
+}
+const el = renderer.domElement;
+let dep = null, dernierGeste = -1e9;
+el.addEventListener("pointerdown", (e) => { dep = { x: e.clientX, y: e.clientY, t: performance.now() }; dernierGeste = performance.now(); });
+el.addEventListener("pointerup", (e) => {
+  dernierGeste = performance.now();
+  if (!dep) return;
+  const bouge = Math.hypot(e.clientX - dep.x, e.clientY - dep.y);
+  const duree = performance.now() - dep.t;
+  dep = null;
+  if (bouge < 8 && duree < 600) choisir(viser(e.clientX, e.clientY));
+});
+el.addEventListener("pointermove", (e) => {
+  if (e.pointerType !== "mouse" || dep) return;
+  survol = viser(e.clientX, e.clientY);
+  el.style.cursor = survol ? "pointer" : "grab";
+});
+el.addEventListener("pointerleave", () => { survol = null; });
+controls.addEventListener("start", () => { controls.autoRotate = false; dernierGeste = performance.now(); });
+controls.addEventListener("end", () => { dernierGeste = performance.now(); });
+
+/* ---------- Position à l'écran d'un élément (étiquette, et tests) ---------- */
+const boite = new THREE.Box3(), centre = new THREE.Vector3();
+function centreDe(id) {
+  const liste = volumes.has(id) ? [sols.get(id)] : parId.get(id) || [];
+  if (!liste.length) return null;
+  boite.makeEmpty();
+  for (const m of liste) boite.expandByObject(m);
+  return boite.getCenter(centre.clone());
+}
+function ecran(id) {
+  const c = centreDe(id);
+  if (!c) return null;
+  const v = c.clone().project(camera);
+  return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight };
+}
+
+/* ---------- Boucle ---------- */
+const lisse = (a, b, dt, k) => a + (b - a) * (1 - Math.exp(-k * dt));
+const ease = (t) => t * t * (3 - 2 * t);
+let avant = performance.now(), decalY = 0, decalX = 0, ficheP = 0, ombreActive = true;
+const COUPE = 0.42, ECART = 6.6;
+const dir = new THREE.Vector3();
+function image() {
+  requestAnimationFrame(image);
+  const now = performance.now(), dt = Math.min(0.1, (now - avant) / 1000);
+  avant = now;
+  ex = lisse(ex, ouvert ? 1 : 0, dt, 4.5);
+  if (Math.abs(ex - (ouvert ? 1 : 0)) < 0.001) ex = ouvert ? 1 : 0;
+  const ombre = ex < 0.03;
+  if (ombre !== ombreActive) { ombreActive = ombre; for (const g of [g1, g2]) g.traverse((o) => { if (o.isMesh && o.material !== MAT.verre) o.castShadow = ombre; }); }
+  g1.position.y = Y1 + ex * ECART;
+  g2.position.y = Y2 + ex * ECART * 2;
+  const coupe = 1 - ex * (1 - COUPE);
+  w0.scale.y = coupe; w1.scale.y = coupe;
+  rappels.forEach((l) => {
+    const toutHaut = l.userData.x === 10 ? Y1 + ex * ECART : Y2 + ex * ECART * 2;
+    l.scale.y = Math.max(0.01, toutHaut);
+    l.material.opacity = ex * 0.75;
+    l.visible = ex > 0.02;
+  });
+  if (trans) {
+    trans.t = Math.min(trans.duree, trans.t + dt);
+    const p = ease(trans.t / trans.duree);
+    controls.target.lerpVectors(trans.deC, trans.aC, p);
+    dir.subVectors(camera.position, controls.target).normalize();
+    camera.position.copy(controls.target).addScaledVector(dir, THREE.MathUtils.lerp(trans.deD, trans.aD, p));
+    if (trans.t >= trans.duree) trans = null;
+  }
+  // La vue glisse pour laisser la place à la fiche.
+  const large = innerWidth > 760;
+  ficheP = lisse(ficheP, fiche.hidden ? 0 : 1, dt, 16);
+  fiche.style.opacity = ficheP.toFixed(3);
+  fiche.style.transform = `translateY(${((1 - ficheP) * 8).toFixed(1)}px)`;
+  fiche.style.visibility = ficheP < 0.01 ? "hidden" : "visible";
+  const hF = fiche.hidden || large ? 0 : fiche.offsetHeight * 0.42;
+  const lF = fiche.hidden || !large ? 0 : 130;
+  decalY = lisse(decalY, hF, dt, 6);
+  decalX = lisse(decalX, lF, dt, 6);
+  camera.setViewOffset(innerWidth, innerHeight, decalX, decalY, innerWidth, innerHeight);
+  // Rotation lente, qui reprend 5 s après le dernier geste.
+  if (!controls.autoRotate && now - dernierGeste > 5000 && !dep && !matchMedia("(prefers-reduced-motion: reduce)").matches) controls.autoRotate = true;
+  controls.update(dt);
+  renderer.render(scene, camera);
+  const quoi = survol || choisi;
+  const p = quoi && ecran(quoi);
+  if (p) {
+    pin.textContent = ELEMENTS.get(quoi).nom;
+    pin.style.left = p.x + "px"; pin.style.top = p.y + "px";
+    pin.classList.add("vu");
+  } else pin.classList.remove("vu");
+}
+image();
+
+// Pour vérifier la page sans deviner : état et position des éléments à l'écran.
+window.maquette = {
+  ecran, viser, get ouvert() { return ouvert; }, get ex() { return ex; }, get choisi() { return choisi; },
+  elements: () => [...ELEMENTS.values()].map((e) => ({ id: e.id, nom: e.nom, surface: e.surface })),
+  camera: () => camera.position.toArray(),
+  infos: () => renderer.info.render,
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Îlot Saint-Martin · maquette 3D cliquable</title>
+<style>
+  :root{--fond:#F1EDE4;--encre:#2A2622;--doux:#6F675D;--trait:#DDD6C8;--carte:#FBF9F4;--accent:#7A68B3}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--fond);color:var(--encre);overflow:hidden;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none}
+  header{position:fixed;left:24px;top:22px;pointer-events:none}
+  h1{margin:0;font-size:19px;font-weight:650;letter-spacing:-.01em}
+  header p{margin:3px 0 0;font-size:13px;color:var(--doux)}
+  button{font:inherit;color:inherit;cursor:pointer}
+  #fiche{position:fixed;right:24px;top:22px;width:300px;padding:17px 19px 16px;border-radius:14px;background:var(--carte);
+    border:1px solid var(--trait);box-shadow:0 10px 30px rgba(42,38,34,.12)}
+  #fiche[hidden]{display:block;pointer-events:none}
+  #fiche h2{margin:0 26px 2px 0;font-size:18px;font-weight:650;letter-spacing:-.01em;line-height:1.2}
+  #fiche .niv{font-size:13px;color:var(--doux)}
+  #fiche .surf{margin:9px 0 9px;font-size:30px;font-weight:650;letter-spacing:-.02em;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+  #fiche .surf small{font-size:15px;font-weight:600;margin-left:3px}
+  #fiche dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 11px;font-size:14px;line-height:1.3}
+  #fiche dt{color:var(--doux)}#fiche dd{margin:0}
+  #fermer{position:absolute;right:9px;top:9px;width:30px;height:30px;border:0;background:none;font-size:19px;line-height:1;color:var(--doux)}
+  #liste{position:fixed;left:24px;top:84px;width:210px;font-size:14px}
+  #liste button{display:block;width:100%;text-align:left;padding:4px 8px;margin-left:-8px;border:0;border-radius:7px;background:none}
+  #liste button:hover{background:rgba(122,104,179,.12)}
+  #liste button.actif{background:var(--accent);color:#fff}
+  footer{position:fixed;left:24px;right:24px;bottom:15px;display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:12px;color:var(--doux);pointer-events:none}
+  footer a{color:var(--encre);font-weight:600;pointer-events:auto;white-space:nowrap}
+  .pin{position:fixed;left:0;top:0;padding:4px 9px;border-radius:7px;background:var(--encre);color:#fff;font-size:13px;font-weight:600;white-space:nowrap;pointer-events:none;transform:translate(-50%,-140%);opacity:0}
+  .pin.vu{opacity:1}
+  #erreur{position:fixed;inset:auto 24px 50%;display:none;padding:18px;border-radius:12px;background:var(--carte);border:1px solid var(--trait);font-size:15px;line-height:1.4}
+  @media (max-width:760px){
+    header{left:20px;top:18px}h1{font-size:16px}header p{font-size:12px}
+    #liste{display:none}
+    #fiche{left:20px;right:20px;top:auto;bottom:46px;width:auto;padding:12px 15px 11px}
+    #fiche h2{font-size:17px;margin-right:120px}#fiche .niv{font-size:12px}
+    #fiche .surf{position:absolute;right:42px;top:12px;margin:0;font-size:25px}#fiche .surf small{font-size:13px}
+    #fiche dl{font-size:13px;gap:1px 9px;margin-top:6px}
+    footer{left:20px;right:20px;bottom:13px;font-size:11px}
+  }
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+            "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<header><h1>Îlot Saint-Martin</h1><p>Clique sur un lot · fais tourner</p></header>
+<nav id="liste" aria-label="Lots de l'îlot"></nav>
+<aside id="fiche" hidden aria-live="polite">
+  <button id="fermer" type="button" aria-label="Fermer la fiche">×</button>
+  <h2 id="f-nom"></h2><div class="niv" id="f-niv"></div>
+  <div class="surf"><span id="f-surf"></span><small>m²</small></div>
+  <dl><dt>Usage</dt><dd id="f-usage"></dd><dt>Matériau</dt><dd id="f-mat"></dd><dt>Hauteur</dt><dd id="f-haut"></dd></dl>
+</aside>
+<div class="pin" id="pin"></div>
+<footer><span>Maquette de présentation, ni à l'échelle garantie ni BIM.</span><a id="dl" download="ilot.html" href="#">Télécharger le fichier</a></footer>
+<div id="erreur"></div>
+<script>
+  window.__echec = (msg) => { const e = document.getElementById("erreur"); e.style.display = "block"; e.textContent = msg; };
+  window.addEventListener("error", (ev) => { if (ev.target && ev.target.tagName === "SCRIPT") window.__echec("Three.js n'a pas pu se charger : vérifie ta connexion, puis recharge la page."); }, true);
+  setTimeout(() => { if (!window.maquette) window.__echec("La 3D ne s'affiche pas. Vérifie ta connexion, ou ouvre ce fichier dans Chrome, Edge, Safari ou Firefox."); }, 12000);
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+/* Le tableau de l'îlot. Emprise : [x1, z1, x2, z2] en mètres. Niveaux à 3 m, rez-de-chaussée à 4 m. */
+const LOTS = [
+  { id: "a", nom: "Lot A · Logements",        r: [-42, -30, 6, -16],  niv: 6, usage: "Logements collectifs, environ 50 logements", mat: "Brique claire", couleur: 0xD9CFBF },
+  { id: "b", nom: "Lot B · Bureaux",          r: [14, -30, 42, -6],   niv: 7, usage: "Bureaux, rez-de-chaussée ouvert",            mat: "Béton clair et verre", couleur: 0xCFCBC2 },
+  { id: "c", nom: "Lot C · Logements",        r: [28, 2, 42, 30],     niv: 5, usage: "Logements, loggias plein sud",               mat: "Bois et enduit clair", couleur: 0xD7C4A5 },
+  { id: "d", nom: "Lot D · Commerces et logements", r: [-14, 16, 20, 30], niv: 4, usage: "Commerces au rez-de-chaussée, logements au-dessus", mat: "Brique claire", couleur: 0xD9CFBF },
+  { id: "e", nom: "Lot E · Crèche",           r: [-42, 10, -22, 30],  niv: 2, usage: "Crèche, 40 berceaux, jardin clos",           mat: "Bois clair", couleur: 0xD7C4A5 },
+  { id: "f", nom: "Lot F · Parking silo",     r: [-42, -10, -30, 4],  niv: 3, usage: "Parking mutualisé, réversible en bureaux",   mat: "Bardage métallique ajouré", couleur: 0xBDBAB2 },
+];
+const COUR = { id: "cour", nom: "Cour commune", r: [-24, -12, 24, 12], usage: "Jardin en pleine terre, ouvert aux habitants", mat: "Prairie, arbres, stabilisé" };
+const ELEMENTS = new Map();
+for (const l of LOTS) {
+  const emprise = (l.r[2] - l.r[0]) * (l.r[3] - l.r[1]);
+  ELEMENTS.set(l.id, { ...l, surface: emprise * l.niv, niveau: `R+${l.niv - 1}, emprise ${emprise} m²`, haut: 4 + (l.niv - 1) * 3 + " m" });
+}
+ELEMENTS.set("cour", { ...COUR, surface: (COUR.r[2] - COUR.r[0]) * (COUR.r[3] - COUR.r[1]), niveau: "Sol", haut: "—" });
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xF1EDE4);
+const FOV = 30;
+const camera = new THREE.PerspectiveCamera(FOV, 1, 1, 1200);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false;
+controls.minPolarAngle = 0.25; controls.maxPolarAngle = 1.45;
+controls.autoRotate = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+controls.autoRotateSpeed = 0.55;
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d0bf, 1.75));
+const soleil = new THREE.DirectionalLight(0xfff1dd, 2.1);
+soleil.position.set(70, 110, 80); soleil.castShadow = true; soleil.shadow.mapSize.set(2048, 2048);
+Object.assign(soleil.shadow.camera, { left: -85, right: 85, top: 85, bottom: -85, near: 10, far: 320 });
+soleil.shadow.bias = -0.0004; soleil.shadow.normalBias = 0.05;
+scene.add(soleil);
+
+const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.92, ...o });
+const SOCLE = M(0xE6E0D3), VOIE = M(0xD3CDBF), HERBE = M(0xC7CBB2), FEUILLE = M(0xA7B096), TRONC = M(0x7D7468), BAND = M(0x8F8A80), ACCENT = 0x7A68B3;
+const pave = (w, h, d, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y + h / 2, z); m.castShadow = m.receiveShadow = true; scene.add(m); return m; };
+const pick = [], corps = new Map();
+pave(104, 1, 80, SOCLE, 0, -1, 0);
+for (const [w, d, x, z] of [[104, 3, 0, 36], [104, 3, 0, -36], [3, 80, 48, 0], [3, 80, -48, 0]]) pave(w, 0.05, d, VOIE, x, 0, z);
+const cour = pave(48, 0.12, 24, HERBE, 0, 0, 0);
+cour.userData.id = "cour"; pick.push(cour); corps.set("cour", cour);
+for (const [x, z, r, h] of [[-14, -5, 3.2, 5], [-3, 6, 3.8, 6], [9, -4, 3.1, 5], [17, 7, 2.8, 4.5], [-18, 7, 2.6, 4.3], [4, -8, 2.6, 4.2]]) {
+  pave(0.5, h, 0.5, TRONC, x, 0, z);
+  const c = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 2), FEUILLE); c.position.set(x, h + r * 0.6, z); c.castShadow = true; scene.add(c);
+}
+for (const l of LOTS) {
+  const [x1, z1, x2, z2] = l.r, w = x2 - x1, d = z2 - z1, h = 4 + (l.niv - 1) * 3, cx = (x1 + x2) / 2, cz = (z1 + z2) / 2;
+  const mat = M(l.couleur);
+  const b = pave(w, h, d, mat, cx, 0, cz);
+  b.userData.id = l.id; pick.push(b); corps.set(l.id, b);
+  for (let n = 0; n < l.niv; n++) {            // un trait par plancher, pour lire les niveaux
+    const y = n === 0 ? 4 : 4 + n * 3;
+    if (y >= h) continue;
+    const t = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, 0.1, d + 0.08), BAND);
+    t.position.set(cx, y, cz); scene.add(t);
+  }
+}
+const volSel = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.0, depthWrite: false }));
+scene.add(volSel); volSel.visible = false;
+
+const $ = (i) => document.getElementById(i);
+const fiche = $("fiche"), pin = $("pin"), liste = $("liste"), boutons = new Map();
+for (const id of ELEMENTS.keys()) { const b = document.createElement("button"); b.type = "button"; b.textContent = ELEMENTS.get(id).nom; b.addEventListener("click", () => choisir(id)); liste.append(b); boutons.set(id, b); }
+$("dl").href = location.href.split("#")[0];
+let choisi = null, survol = null;
+const nb = (x) => x.toLocaleString("fr-FR");
+function choisir(id) {
+  if (choisi) { corps.get(choisi).material.color.set(choisi === "cour" ? 0xC7CBB2 : ELEMENTS.get(choisi).couleur); boutons.get(choisi).classList.remove("actif"); }
+  choisi = id;
+  if (!id) { fiche.hidden = true; return; }
+  const e = ELEMENTS.get(id);
+  corps.get(id).material.color.set(0x9A8BC9);
+  boutons.get(id).classList.add("actif");
+  $("f-nom").textContent = e.nom; $("f-niv").textContent = e.niveau; $("f-surf").textContent = nb(e.surface) + " ";
+  $("f-usage").textContent = e.usage; $("f-mat").textContent = e.mat; $("f-haut").textContent = e.haut;
+  fiche.hidden = false;
+}
+$("fermer").addEventListener("click", () => choisir(null));
+addEventListener("keydown", (e) => { if (e.key === "Escape") choisir(null); });
+
+const distance = () => { const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2)); return Math.max(50 / 2 / t, (camera.aspect < 0.8 ? 92 : 118) / 2 / (t * camera.aspect)) + 8; };
+function dimensionner() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  controls.minDistance = distance() * 0.35; controls.maxDistance = distance() * 1.8;
+}
+controls.target.set(0, 6, 0);
+dimensionner();
+{
+  const d = distance(), az = THREE.MathUtils.degToRad(32), po = THREE.MathUtils.degToRad(58);
+  camera.position.set(Math.sin(az) * Math.sin(po) * d, 6 + Math.cos(po) * d, Math.cos(az) * Math.sin(po) * d);
+}
+addEventListener("resize", () => {
+  dimensionner();
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir, distance());
+});
+
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function viser(cx, cy) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(pick, false);
+  return hits.length ? hits[0].object.userData.id : null;
+}
+const el = renderer.domElement;
+let dep = null, dernierGeste = -1e9;
+el.addEventListener("pointerdown", (e) => { dep = { x: e.clientX, y: e.clientY, t: performance.now() }; dernierGeste = performance.now(); });
+el.addEventListener("pointerup", (e) => {
+  dernierGeste = performance.now();
+  if (!dep) return;
+  const bouge = Math.hypot(e.clientX - dep.x, e.clientY - dep.y), duree = performance.now() - dep.t;
+  dep = null;
+  if (bouge < 8 && duree < 600) choisir(viser(e.clientX, e.clientY));
+});
+el.addEventListener("pointermove", (e) => { if (e.pointerType !== "mouse" || dep) return; survol = viser(e.clientX, e.clientY); el.style.cursor = survol ? "pointer" : "grab"; });
+el.addEventListener("pointerleave", () => { survol = null; });
+controls.addEventListener("start", () => { controls.autoRotate = false; dernierGeste = performance.now(); });
+controls.addEventListener("end", () => { dernierGeste = performance.now(); });
+
+const boite = new THREE.Box3();
+function ecran(id) {
+  const m = corps.get(id); if (!m) return null;
+  boite.setFromObject(m);
+  const c = boite.getCenter(new THREE.Vector3()); c.y = boite.max.y;
+  const v = c.project(camera);
+  return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight };
+}
+const lisse = (a, b, dt, k) => a + (b - a) * (1 - Math.exp(-k * dt));
+let avant = performance.now(), ficheP = 0, decalY = 0, decalX = 0;
+function image() {
+  requestAnimationFrame(image);
+  const now = performance.now(), dt = Math.min(0.1, (now - avant) / 1000); avant = now;
+  ficheP = lisse(ficheP, fiche.hidden ? 0 : 1, dt, 16);
+  fiche.style.opacity = ficheP.toFixed(3);
+  fiche.style.transform = `translateY(${((1 - ficheP) * 8).toFixed(1)}px)`;
+  fiche.style.visibility = ficheP < 0.01 ? "hidden" : "visible";
+  const large = innerWidth > 760;
+  decalY = lisse(decalY, fiche.hidden || large ? 0 : fiche.offsetHeight * 0.42, dt, 6);
+  decalX = lisse(decalX, fiche.hidden || !large ? 0 : 130, dt, 6);
+  camera.setViewOffset(innerWidth, innerHeight, decalX, decalY, innerWidth, innerHeight);
+  if (!controls.autoRotate && now - dernierGeste > 5000 && !dep && !matchMedia("(prefers-reduced-motion: reduce)").matches) controls.autoRotate = true;
+  controls.update(dt);
+  renderer.render(scene, camera);
+  const quoi = survol || choisi, p = quoi && ecran(quoi);
+  if (p) { pin.textContent = ELEMENTS.get(quoi).nom; pin.style.left = p.x + "px"; pin.style.top = p.y + "px"; pin.classList.add("vu"); } else pin.classList.remove("vu");
+}
+image();
+window.maquette = { ecran, viser, get choisi() { return choisi; }, elements: () => [...ELEMENTS.values()].map((e) => ({ id: e.id, nom: e.nom, surface: e.surface })), camera: () => camera.position.toArray() };
+</script>
+</body>
+</html>

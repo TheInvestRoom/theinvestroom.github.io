@@ -1,0 +1,33 @@
+<!doctype html><html lang='fr'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Le prompt qui fait lire ton PLU à Claude · the.invest.room</title><style>
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+:root{--creme:#F5F1EA;--charbon:#1B1714;--encre:#2B2622;--lavande:#B9A7E0;--lav-fonce:#6E5BA8;--orange:#D97757;--trait:#E3DCD0}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--creme);color:var(--encre);font-family:Barlow,Arial,sans-serif;font-size:17px;line-height:1.55}
+.page{max-width:720px;margin:0 auto;padding:28px 20px 60px}
+.marque{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.08em;color:var(--lav-fonce);text-transform:uppercase}
+h1{font-family:'Big Shoulders Display',Impact,sans-serif;font-weight:900;font-size:44px;line-height:1;margin:10px 0 8px;text-transform:uppercase;color:var(--charbon)}
+.sous{font-size:19px;font-weight:600;margin:0 0 6px}.date{font-size:13px;color:#7A726A;margin-bottom:22px}
+.intro{background:#fff;border-radius:16px;padding:16px 18px;border-left:5px solid var(--lavande);margin-bottom:26px}
+h2{font-family:'Big Shoulders Display',Impact,sans-serif;font-weight:800;font-size:28px;text-transform:uppercase;margin:30px 0 12px;color:var(--charbon)}
+.carte{background:#fff;border-radius:16px;padding:14px 16px;margin:10px 0;box-shadow:0 4px 14px rgba(27,23,20,.06)}
+.carte .nom{font-weight:700;font-size:18px}.badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;background:var(--lavande);color:var(--charbon)}
+.badge.officiel{background:#CDEBD6}.badge.communautaire{background:#F3D9CC}
+.carte p{margin:6px 0 4px}.carte a{color:var(--lav-fonce);font-weight:600;word-break:break-word}
+ol.etapes{padding-left:0;list-style:none;counter-reset:e}ol.etapes li{counter-increment:e;position:relative;padding:10px 0 10px 46px;border-bottom:1px solid var(--trait)}
+ol.etapes li:before{content:counter(e);position:absolute;left:0;top:8px;width:32px;height:32px;border-radius:16px;background:var(--charbon);color:var(--creme);font-weight:700;display:flex;align-items:center;justify-content:center}
+.prompt{font-family:'JetBrains Mono',monospace;font-size:14px;background:var(--charbon);color:var(--creme);border-radius:12px;padding:12px 14px;margin:10px 0;white-space:pre-wrap}
+.avert{font-size:14px;color:#5E5750;background:#EEE8DE;border-radius:12px;padding:12px 14px;margin-top:28px}
+.pied{margin-top:30px;text-align:center;font-size:14px;color:#7A726A}.pied b{color:var(--charbon)}
+@media print{body{font-size:12.5px}.page{max-width:none;padding:0 6mm}h1{font-size:34px}h2{font-size:22px;break-after:avoid}.carte,li,.prompt{break-inside:avoid}@page{size:A4;margin:14mm 12mm}}
+</style></head><body><main class='page'><div class='marque'>the.invest.room · ressource gratuite</div><h1>Le prompt qui fait lire ton PLU à Claude</h1><p class='sous'>Le prompt exact, les 5 réponses vérifiées dans le règlement, et ce que Claude ne voit pas</p><div class='date'>Mis à jour le 2 novembre 2026</div><div class='intro'>On a passé ce prompt le 01/11/2026 dans une session neuve de Claude Code, une seule fois, sur le règlement de la zone UB du PLU de La Fare-les-Oliviers (9 pages, version mise à jour en septembre 2022). Le terrain de 20 m sur 25 m est un exemple. On a vérifié les 5 réponses à la main dans le PDF : elles sont justes, avec la bonne phrase et le bon article. Ça ne veut pas dire que ce sera toujours le cas : sur un autre PLU, relis chaque réponse dans le texte. On ne l&#x27;a pas essayé dans l&#x27;appli Claude.</div><h2>Le prompt</h2><p>Joins le PDF du règlement de ta zone, et change la zone et les dimensions du terrain.</p><div class='prompt'>Le PDF joint est le règlement de la zone UB du PLU de ma commune. Mon terrain est en zone UB, il fait 20 m de large sur 25 m de profondeur, et il donne sur la rue par son côté de 20 m.
+
+Réponds à ces 5 questions en citant le numéro de l&#x27;article et la phrase exacte du règlement. Si la réponse n&#x27;est pas dans le texte, dis-le.
+1. Quelle est la hauteur maximale ?
+2. Quel recul dois-je garder par rapport à la rue ?
+3. Quel recul dois-je garder par rapport aux limites séparatives ?
+4. Quelle est l&#x27;emprise au sol maximale ?
+5. Quelle part du terrain dois-je garder en pleine terre ?
+
+Ensuite, calcule pour mon terrain l&#x27;emprise que permet le pourcentage, puis celle que les reculs laissent vraiment, et dis-moi laquelle s&#x27;applique.
+
+Enfin, dessine le volume maximal constructible en axonométrie dans un fichier volume.svg, avec le terrain, les reculs et les cotes.</div><h2>Les 5 réponses, vérifiées dans le règlement</h2><div class='carte'><div class='nom'>Hauteur</div><p>9 m à l&#x27;égout du toit (article UB 10). La hauteur au faîtage n&#x27;est pas dans le texte, et Claude le dit.</p></div><div class='carte'><div class='nom'>Recul sur la rue</div><p>3 m (article UB 6), sauf indication contraire sur le plan de zonage.</p></div><div class='carte'><div class='nom'>Recul sur les limites</div><p>3 m (article UB 7), avec une exception pour un abri de jardin de 10 m².</p></div><div class='carte'><div class='nom'>Emprise au sol</div><p>60 % de l&#x27;unité foncière (article UB 9).</p></div><div class='carte'><div class='nom'>Pleine terre</div><p>30 % du terrain (article UB 13).</p></div><h2>Le calcul qui surprend</h2><p>Sur 500 m², les 60 % donnent 300 m². Mais les reculs ne laissent que 14 m sur 19 m, soit 266 m². Les deux règles se cumulent, donc c&#x27;est 266 m² qui comptent. Le calcul vaut pour ce terrain d&#x27;exemple : sur un terrain plus grand, le résultat peut s&#x27;inverser.</p><h2>Ce que Claude ne voit pas</h2><p>Il n&#x27;a lu que les pages de la zone. Il ne voit ni le plan de zonage, ni les dispositions générales, ni les plans de prévention des risques. Il a aussi fait un choix pour le toit, un faîtage à 12,33 m, et il demande lui-même de le faire confirmer, car les pignons dépassent 9 m. Ce n&#x27;est pas un avis d&#x27;urbanisme : confirme en mairie avant de dessiner ton projet.</p><h2>Où trouver ton règlement</h2><p>Sur le Géoportail de l&#x27;urbanisme (https://www.geoportail-urbanisme.gouv.fr/) ou sur le site de ta commune. Le règlement qu&#x27;on a utilisé : https://www.lafarelesoliviers.com/wp-content/uploads/2022/09/reglement_zone-UB.pdf</p><div class='pied'>Tu as aimé ? Suis <b>@the.invest.room</b> : une astuce IA, archi ou investissement chaque jour.</div></main></body></html>

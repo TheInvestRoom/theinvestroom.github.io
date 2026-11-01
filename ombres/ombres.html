@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ombres — médiathèque de quartier, Lyon</title>
+<style>
+  :root {
+    --bg: #f5f3ee;
+    --panel: #fbfaf7;
+    --ink: #24231f;
+    --muted: #64625a;
+    --line: #d9d6cd;
+    --accent: #c2410c;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  #stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  #stage canvas { position: absolute; inset: 0; display: block; cursor: grab; outline: none; }
+  #stage canvas:active { cursor: grabbing; }
+
+  #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .lbl {
+    position: absolute; left: 0; top: 0;
+    font-size: 11.5px; line-height: 1.2; white-space: nowrap;
+    color: var(--ink);
+    background: rgba(251, 250, 247, .82);
+    padding: 1px 5px; border-radius: 3px;
+    will-change: transform;
+  }
+  .lbl.flag { color: var(--muted); font-style: italic; }
+
+  #compass {
+    position: absolute; top: 14px; right: 14px; width: 68px; height: 68px;
+    pointer-events: none;
+  }
+  #compass-cap {
+    position: absolute; top: 84px; right: 14px; width: 68px; text-align: center;
+    font-size: 11.5px; color: var(--muted); pointer-events: none;
+  }
+  #hint {
+    position: absolute; left: 14px; bottom: 10px;
+    font-size: 12px; color: var(--muted); pointer-events: none;
+  }
+
+  aside {
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    padding: 20px 20px 16px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -.005em; }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+
+  .now { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  #time { font-size: 34px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  #date { font-size: 17px; font-weight: 500; }
+  .timecap { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+  dl.sun { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 0; border-top: 1px solid var(--line); padding-top: 12px; }
+  dl.sun dt { color: var(--muted); font-size: 12.5px; }
+  dl.sun dd { margin: 0; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  dl.sun dd small { font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 2px; }
+  #status { font-size: 13px; color: var(--muted); margin: 10px 0 0; min-height: 1.4em; font-variant-numeric: tabular-nums; }
+  dl.sun dt.night { color: var(--accent); font-weight: 600; }
+
+  .ctl label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    display: block; width: 100%; height: 34px; margin: 0;
+    background: none; cursor: pointer; touch-action: pan-y;
+    --track: var(--line);
+  }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--track); }
+  input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--track); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  }
+  input[type=range]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  .ticks { position: relative; height: 16px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ticks span { position: absolute; transform: translateX(-50%); }
+
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  button {
+    font: inherit; font-weight: 500; color: var(--ink);
+    min-height: 40px; padding: 6px 10px; border-radius: 6px;
+    background: transparent; border: 1px solid #a9a69c; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notes { margin-top: auto; border-top: 1px solid var(--line); padding-top: 10px; font-size: 12px; line-height: 1.4; color: var(--muted); }
+  .notes p { margin: 0 0 6px; }
+  .notes p:last-child { margin-bottom: 0; }
+  .notes strong { font-weight: 600; color: var(--ink); }
+
+  #error {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    padding: 24px; text-align: center; color: var(--ink);
+  }
+  #error.on { display: flex; }
+
+  #disc {
+    display: none; position: absolute; left: 8px; bottom: 5px;
+    font-size: 11.5px; color: var(--muted); pointer-events: none;
+  }
+
+  /* Téléphone en portrait : maquette en haut, réglages dessous */
+  @media (max-width: 760px) and (orientation: portrait) {
+    body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 40fr) minmax(0, 60fr); }
+    aside { border-left: 0; border-top: 1px solid var(--line); padding: 10px 16px 14px; gap: 8px; }
+    aside > header { display: none; }
+    #time { font-size: 24px; } #date { font-size: 15px; }
+    .timecap { margin-top: 0; }
+    dl.sun { margin-top: 6px; padding-top: 6px; } dl.sun dd { font-size: 18px; line-height: 1.2; }
+    #status { margin-top: 4px; font-size: 12.5px; }
+    .btns { margin-top: 6px; }
+    #disc { display: block; }
+    .notes .lead { display: none; }
+    #compass { width: 54px; height: 54px; top: 8px; right: 8px; }
+    #compass-cap { top: 62px; right: 8px; width: 54px; }
+    #hint { display: none; }
+    .lbl { font-size: 10.5px; padding: 0 3px; }
+    button { min-height: 44px; }
+  }
+  /* Téléphone en paysage : panneau latéral plus étroit */
+  @media (max-height: 520px) and (orientation: landscape) {
+    body { grid-template-columns: minmax(0, 1fr) 290px; }
+    aside { padding: 8px 14px; gap: 6px; }
+    aside > header { display: none; }
+    #time { font-size: 22px; } #date { font-size: 15px; }
+    .timecap { margin-top: 0; }
+    dl.sun { margin-top: 4px; padding-top: 4px; } dl.sun dd { font-size: 17px; line-height: 1.2; }
+    #status { margin-top: 2px; font-size: 12.5px; }
+    input[type=range] { height: 28px; }
+    .btns { margin-top: 4px; }
+    button { min-height: 36px; padding: 2px 8px; }
+    #hint { display: none; }
+    #disc { display: block; }
+    .notes .lead { display: none; }
+  }
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<main id="stage" aria-label="Maquette 3D du bâtiment. Faire glisser pour tourner autour.">
+  <div id="labels" aria-hidden="true"></div>
+
+  <svg id="compass" viewBox="-50 -50 100 100" role="img" aria-label="Direction du nord sur la maquette">
+    <circle r="47" fill="#fbfaf7" stroke="#d9d6cd" stroke-width="2"/>
+    <g id="needle">
+      <path d="M0 -28 L9 8 L0 2 L-9 8 Z" fill="#c2410c"/>
+    </g>
+    <text id="needle-n" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="700" fill="#c2410c">N</text>
+  </svg>
+  <div id="compass-cap">Nord</div>
+  <div id="hint">Glisser pour tourner · molette ou pincement pour zoomer</div>
+  <div id="disc">Étude de présentation, pas une étude réglementaire.</div>
+  <div id="error" role="alert"></div>
+</main>
+
+<aside>
+  <header>
+    <h1>Médiathèque de quartier : ombres</h1>
+    <p class="sub">Lyon, latitude 45,76° N</p>
+  </header>
+
+  <section aria-label="Position du soleil">
+    <div class="now">
+      <div id="time">–</div>
+      <div id="date">–</div>
+    </div>
+    <div class="timecap">heure solaire (le soleil culmine à 12 h)</div>
+    <dl class="sun">
+      <div><dt id="alt-label" aria-live="polite">Hauteur</dt><dd id="alt">–</dd></div>
+      <div><dt>Azimut</dt><dd id="az">–</dd></div>
+    </dl>
+    <p id="status"></p>
+  </section>
+
+  <section class="ctl">
+    <label for="hour"><span>Heure solaire</span></label>
+    <input id="hour" type="range" min="240" max="1200" step="5" value="960">
+    <div class="ticks" id="hour-ticks"></div>
+  </section>
+
+  <section class="ctl">
+    <label for="day"><span>Jour de l'année</span><span id="daynum" style="color:var(--muted);font-weight:400"></span></label>
+    <input id="day" type="range" min="1" max="365" step="1" value="172">
+    <div class="ticks" id="day-ticks"></div>
+    <div class="btns">
+      <button type="button" id="b-jun" aria-pressed="false">21 juin</button>
+      <button type="button" id="b-dec" aria-pressed="false">21 décembre</button>
+    </div>
+  </section>
+
+  <footer class="notes">
+    <p class="lead"><strong>Étude de présentation, pas une étude réglementaire.</strong></p>
+    <p>Terrain plat, sans bâtiments voisins ni arbres. À Lyon, la montre avance sur l'heure solaire d'environ 1 h 40 en été et 40 min en hiver.</p>
+    <p>Étage : le bloc nord-ouest de 6 × 4,5 m ne figure pas au tableau de surfaces ; il est montré plein.</p>
+  </footer>
+</aside>
+
+<script type="module">
+const errorBox = document.getElementById('error');
+function fail(msg) { errorBox.textContent = msg; errorBox.classList.add('on'); }
+
+let THREE, OrbitControls;
+try {
+  THREE = await import('three');
+  ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+} catch (e) {
+  fail("Three.js n'a pas pu être chargé depuis le CDN. Vérifiez la connexion à Internet, puis rechargez la page.");
+  throw e;
+}
+
+/* ---------- Soleil ---------- */
+const DEG = Math.PI / 180;
+const LAT = 45.76 * DEG;
+const DAY_JUN = 172, DAY_DEC = 355;   // année non bissextile
+
+// Déclinaison solaire (série de Spencer, radians). n = quantième, 1 à 365.
+function declination(n) {
+  const g = 2 * Math.PI * (n - 1) / 365;
+  return 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g)
+       - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g)
+       - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+}
+
+// Direction vers le soleil : composantes est, nord, zénith.
+function sunENU(decl, hourAngle) {
+  return {
+    e: -Math.cos(decl) * Math.sin(hourAngle),
+    n: Math.cos(LAT) * Math.sin(decl) - Math.sin(LAT) * Math.cos(decl) * Math.cos(hourAngle),
+    u: Math.sin(LAT) * Math.sin(decl) + Math.cos(LAT) * Math.cos(decl) * Math.cos(hourAngle),
+  };
+}
+
+// Demi-durée du jour (radians d'angle horaire) à l'horizon géométrique.
+function halfDay(decl) {
+  const c = -Math.tan(LAT) * Math.tan(decl);
+  return Math.acos(Math.max(-1, Math.min(1, c)));
+}
+
+/* ---------- Mise en forme française ---------- */
+const NB = ' ';
+const pad = v => String(v).padStart(2, '0');
+function fmtTime(min) {
+  const m = Math.round(min);
+  return `${Math.floor(m / 60)}${NB}h${NB}${pad(m % 60)}`;
+}
+function fmtDeg(x) {
+  const s = Math.abs(x).toFixed(1);
+  const neg = x < 0 && Number(s) !== 0;
+  return (neg ? '−' : '') + s.replace('.', ',') + '°';
+}
+const MONTHS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const MONTH_LEN = [31,28,31,30,31,30,31,31,30,31,30,31];
+function fmtDate(n) {
+  let d = n, m = 0;
+  while (d > MONTH_LEN[m]) { d -= MONTH_LEN[m]; m++; }
+  return `${d === 1 ? '1er' : d}${NB}${MONTHS[m]}`;
+}
+const WINDS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+const wind = az => WINDS[Math.round(az / 22.5) % 16];
+
+/* ---------- Scène ----------
+   Repère : X = est, Y = haut, Z = sud. Le nord est donc vers -Z.
+   Le plan est donné depuis l'angle sud-ouest : (X, N) en mètres. */
+const W = 20, D = 11, H0 = 3.6, W1 = 14, H1 = 3.3;
+const P = (x, y, n) => new THREE.Vector3(x - W / 2, y, D / 2 - n);
+
+const stage = document.getElementById('stage');
+const BG = 0xf5f3ee, ACCENT = 0xc2410c;
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (e) {
+  fail("Ce navigateur ne peut pas afficher la maquette : WebGL n'est pas disponible.");
+  throw e;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(BG);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(BG, 110, 420);
+
+const camera = new THREE.PerspectiveCamera(30, 1, 1, 1600);
+const target = new THREE.Vector3(0, 4.5, 0.5);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(target);
+controls.enablePan = false;
+controls.enableDamping = !reduced;
+controls.dampingFactor = 0.08;
+controls.minPolarAngle = 0.02;
+controls.maxPolarAngle = 88 * DEG;
+
+// Lumières. Le sol reste clair à toute heure ; l'ombre est posée par-dessus avec une densité
+// constante, pour rester lisible même quand le soleil rase le sol.
+const SUN_POWER = 0.8;
+const SHADOW_DENSITY = 0.3;
+const hemi = new THREE.HemisphereLight(0xffffff, 0xcdc9bf, 2.45);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, SUN_POWER);
+sun.castShadow = true;
+const mapSize = Math.min(4096, renderer.capabilities.maxTextureSize);
+sun.shadow.mapSize.set(mapSize, mapSize);
+sun.shadow.normalBias = 0.03;
+scene.add(sun, sun.target);
+sun.target.position.set(0, 3, 0);
+
+// Sol
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(700, 96).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0xf0eee8, depthWrite: false })
+);
+ground.renderOrder = -1;
+scene.add(ground);
+const shadowMat = new THREE.ShadowMaterial({ color: 0x1e1d24, opacity: SHADOW_DENSITY, depthWrite: false });
+const groundShadow = new THREE.Mesh(ground.geometry, shadowMat);
+groundShadow.receiveShadow = true;
+scene.add(groundShadow);
+
+// Bâtiment : deux volumes pleins, sans épaisseur de plancher ajoutée (6,90 m au total).
+const white = new THREE.MeshStandardMaterial({
+  color: 0xffffff, roughness: 1, metalness: 0,
+  polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+});
+function volume(x0, x1, n0, n1, y0, y1) {
+  const g = new THREE.BoxGeometry(x1 - x0, y1 - y0, n1 - n0);
+  const m = new THREE.Mesh(g, white);
+  m.position.copy(P((x0 + x1) / 2, (y0 + y1) / 2, (n0 + n1) / 2));
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+  const veil = new THREE.Mesh(g, shadowMat);
+  veil.position.copy(m.position);
+  veil.receiveShadow = true;
+  scene.add(veil);
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({ color: 0x77756d }));
+  e.position.copy(m.position);
+  scene.add(e);
+  return m;
+}
+const solids = [
+  volume(0, W, 0, D, 0, H0),
+  volume(0, W1, 0, D, H0, H0 + H1),
+];
+const TOP = H0 + H1;
+
+// Limites de pièces reportées en traits fins sur les façades et le toit de l'étage.
+{
+  const eps = 0.012, pts = [];
+  const seg = (a, b) => pts.push(a, b);
+  const vert = (x, n, y0, y1, dx, dn) => seg(P(x + dx, y0, n + dn), P(x + dx, y1, n + dn));
+  // Rez-de-chaussée
+  vert(6, 0, 0, H0, 0, -eps);        // hall / salle de lecture, façade sud
+  vert(6, D, 0, H0, 0, eps);         // hall / sanitaires, façade nord
+  vert(12, D, 0, H0, 0, eps);        // sanitaires / atelier, façade nord
+  vert(W, 6.5, 0, H0, eps, 0);       // salle de lecture / atelier, façade est
+  // Étage
+  vert(6, 0, H0, TOP, 0, -eps);      // bureaux / salle polyvalente, façade sud
+  vert(6, D, H0, TOP, 0, eps);       // bloc non renseigné / salle polyvalente, façade nord
+  vert(0, 6.5, H0, TOP, -eps, 0);    // bureaux / bloc non renseigné, façade ouest
+  // Toit de l'étage
+  const yr = TOP + eps;
+  seg(P(6, yr, 0), P(6, yr, D));
+  seg(P(0, yr, 6.5), P(6, yr, 6.5));
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xa8a59b })));
+}
+
+// Tracé au sol : rose des vents, jardin, échelle (texture peinte, nord en haut).
+{
+  const SPAN = 50, S = 2048, k = S / SPAN;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const x = c.getContext('2d');
+  x.translate(S / 2, S / 2);
+  const ink = '#55534c', accent = '#c2410c';
+  const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+  x.strokeStyle = ink; x.lineWidth = 0.05 * k;
+  x.beginPath(); x.arc(0, 0, 16 * k, 0, Math.PI * 2); x.stroke();
+  for (let a = 0; a < 360; a += 15) {
+    const major = a % 90 === 0, r0 = (major ? 15.5 : 15.75) * k, r1 = 16 * k;
+    const s = Math.sin(a * DEG), co = -Math.cos(a * DEG);
+    x.beginPath(); x.moveTo(s * r0, co * r0); x.lineTo(s * r1, co * r1); x.stroke();
+  }
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = ink;
+  x.font = `600 ${1.5 * k}px ${FONT}`;
+  x.fillText('E', 17.6 * k, 0);
+  x.fillText('S', 0, 17.6 * k);
+  x.fillText('O', -17.6 * k, 0);
+  // Nord : flèche et lettre dans la couleur d'accent
+  x.fillStyle = accent;
+  x.beginPath();
+  x.moveTo(0, -18.6 * k); x.lineTo(1 * k, -16 * k); x.lineTo(-1 * k, -16 * k); x.closePath(); x.fill();
+  x.font = `700 ${2.3 * k}px ${FONT}`;
+  x.fillText('N', 0, -20.3 * k);
+  // Jardin
+  x.fillStyle = ink;
+  x.font = `500 ${1.05 * k}px ${FONT}`;
+  if ('letterSpacing' in x) x.letterSpacing = `${0.25 * k}px`;
+  x.fillText('JARDIN', 0, 9.5 * k);
+  if ('letterSpacing' in x) x.letterSpacing = '0px';
+  // Échelle 10 m
+  const bx = -22 * k, by = 15 * k;
+  x.fillStyle = ink;
+  x.fillRect(bx, by, 5 * k, 0.22 * k);
+  x.strokeRect(bx, by, 10 * k, 0.22 * k);
+  x.font = `500 ${0.85 * k}px ${FONT}`;
+  x.fillText('0', bx, by - 0.8 * k);
+  x.fillText('5', bx + 5 * k, by - 0.8 * k);
+  x.fillText('10 m', bx + 10 * k, by - 0.8 * k);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const plan = new THREE.Mesh(
+    new THREE.PlaneGeometry(SPAN, SPAN).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+  );
+  plan.position.y = 0.02;
+  plan.renderOrder = 1;
+  scene.add(plan);
+}
+
+// Course du soleil sur une demi-sphère de 21 m de rayon (repère visuel, pas à l'échelle)
+const DOME = 21;
+const accentMat = new THREE.MeshBasicMaterial({ color: ACCENT });
+function arcPoints(n) {
+  const decl = declination(n), hd = halfDay(decl), out = [];
+  for (let i = 0; i <= 64; i++) {
+    const v = sunENU(decl, -hd + 2 * hd * i / 64);
+    out.push(new THREE.Vector3(v.e, Math.max(v.u, 0), -v.n).multiplyScalar(DOME));
+  }
+  return out;
+}
+for (const n of [DAY_JUN, DAY_DEC]) {
+  scene.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(arcPoints(n)),
+    new THREE.LineBasicMaterial({ color: 0xb4b1a7 })
+  ));
+}
+const arc = new THREE.Mesh(new THREE.BufferGeometry(), accentMat);
+scene.add(arc);
+const sunBall = new THREE.Mesh(new THREE.SphereGeometry(0.75, 24, 16), accentMat);
+scene.add(sunBall);
+const stemGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+const stem = new THREE.Line(stemGeo, new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.55 }));
+scene.add(stem);
+const foot = new THREE.Mesh(new THREE.CircleGeometry(0.32, 20).rotateX(-Math.PI / 2), accentMat);
+foot.position.y = 0.04;
+scene.add(foot);
+
+/* ---------- Mise à jour du soleil ---------- */
+const $ = id => document.getElementById(id);
+const hourEl = $('hour'), dayEl = $('day');
+let lastDay = null;
+let needsRender = true;
+
+const corners = [];
+for (const [x0, x1, y0, y1] of [[0, W, 0, H0], [0, W1, H0, TOP]])
+  for (const x of [x0, x1]) for (const y of [y0, y1]) for (const n of [0, D]) corners.push(P(x, y, n));
+
+// Le cadre d'ombre épouse le bâtiment vu du soleil : toute ombre portée y tient par construction,
+// même à 2° de hauteur, et la définition reste constante quelle que soit la longueur de l'ombre.
+const tmp = new THREE.Vector3();
+function fitShadow(dir, altRad) {
+  sun.position.copy(sun.target.position).addScaledVector(dir, 70);
+  const cam = sun.shadow.camera;
+  cam.position.copy(sun.position);
+  cam.lookAt(sun.target.position);
+  cam.updateMatrixWorld();
+  const inv = cam.matrixWorld.clone().invert();
+  let l = Infinity, r = -Infinity, b = Infinity, t = -Infinity, near = Infinity, far = -Infinity;
+  for (const c of corners) {
+    tmp.copy(c).applyMatrix4(inv);
+    l = Math.min(l, tmp.x); r = Math.max(r, tmp.x);
+    b = Math.min(b, tmp.y); t = Math.max(t, tmp.y);
+    near = Math.min(near, -tmp.z); far = Math.max(far, -tmp.z);
+  }
+  const m = 0.4;
+  cam.left = l - m; cam.right = r + m; cam.bottom = b - m; cam.top = t + m;
+  cam.near = Math.max(0.5, near - 1);
+  cam.far = far + TOP / Math.sin(Math.max(altRad, 0.4 * DEG)) + 2;
+  cam.updateProjectionMatrix();
+  sun.shadow.bias = -0.004 / (cam.far - cam.near);
+}
+
+function smooth(a, b, x) {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+function update() {
+  const min = Number(hourEl.value), n = Number(dayEl.value);
+  const decl = declination(n);
+  const v = sunENU(decl, (min / 60 - 12) * 15 * DEG);
+  const altRad = Math.asin(v.u), alt = altRad / DEG;
+  let az = Math.atan2(v.e, v.n) / DEG;
+  if (az < 0) az += 360;
+  const dir = new THREE.Vector3(v.e, v.u, -v.n);
+  const up = alt > 0;
+
+  // Lumière
+  sun.intensity = SUN_POWER * smooth(-0.2, 2.5, alt);
+  hemi.intensity = 2.45 * (0.82 + 0.18 * smooth(-3, 2, alt));
+  shadowMat.opacity = SHADOW_DENSITY * smooth(0, 0.8, alt);
+  ground.material.color.setHex(up ? 0xf0eee8 : 0xdedcd6);
+  if (up) { fitShadow(dir, altRad); renderer.shadowMap.needsUpdate = true; }
+
+  // Repères dans la scène
+  sunBall.visible = stem.visible = foot.visible = up;
+  if (up) {
+    sunBall.position.copy(dir).multiplyScalar(DOME);
+    foot.position.x = sunBall.position.x;
+    foot.position.z = sunBall.position.z;
+    const p = stemGeo.attributes.position;
+    p.setXYZ(0, sunBall.position.x, sunBall.position.y, sunBall.position.z);
+    p.setXYZ(1, sunBall.position.x, 0, sunBall.position.z);
+    p.needsUpdate = true;
+  }
+  if (n !== lastDay) {
+    arc.geometry.dispose();
+    arc.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arcPoints(n)), 96, 0.07, 6, false);
+    lastDay = n;
+  }
+
+  // Lecture
+  const hd = halfDay(decl) / DEG / 15;
+  const rise = (12 - hd) * 60, set = (12 + hd) * 60;
+  $('time').textContent = fmtTime(min);
+  $('date').textContent = fmtDate(n);
+  $('alt').textContent = fmtDeg(alt);
+  $('az').innerHTML = `${fmtDeg(az)}<small>${wind(az)}</small>`;
+  $('daynum').textContent = `jour ${n} / 365`;
+  $('status').textContent = `Lever ${fmtTime(rise)}, coucher ${fmtTime(set)}`;
+  const altLabel = $('alt-label');
+  altLabel.textContent = up ? 'Hauteur' : 'Sous l’horizon';
+  altLabel.classList.toggle('night', !up);
+
+  hourEl.setAttribute('aria-valuetext', `${fmtTime(min)}, heure solaire`);
+  dayEl.setAttribute('aria-valuetext', fmtDate(n));
+  $('b-jun').setAttribute('aria-pressed', n === DAY_JUN);
+  $('b-dec').setAttribute('aria-pressed', n === DAY_DEC);
+
+  // Plage de jour, sur la piste de l'heure
+  const f = t => Math.max(0, Math.min(1, (t - 240) / 960));
+  const pos = t => `calc(11px + (100% - 22px) * ${f(t).toFixed(4)})`;
+  hourEl.style.setProperty('--track',
+    `linear-gradient(to right, var(--line) ${pos(rise)}, var(--accent) ${pos(rise)}, var(--accent) ${pos(set)}, var(--line) ${pos(set)})`);
+
+  needsRender = true;
+}
+
+/* ---------- Graduations ---------- */
+const tickPos = f => `calc(11px + (100% - 22px) * ${f})`;
+for (const h of [4, 8, 12, 16, 20]) {
+  const s = document.createElement('span');
+  s.textContent = `${h}${NB}h`;
+  s.style.left = tickPos((h * 60 - 240) / 960);
+  $('hour-ticks').append(s);
+}
+{
+  let start = 1;
+  'JFMAMJJASOND'.split('').forEach((c, i) => {
+    const s = document.createElement('span');
+    s.textContent = c;
+    s.title = MONTHS[i];
+    s.style.left = tickPos((start + MONTH_LEN[i] / 2 - 1) / 364);
+    $('day-ticks').append(s);
+    start += MONTH_LEN[i];
+  });
+}
+
+/* ---------- Étiquettes des pièces ---------- */
+const UP = [0, 1, 0], S_ = [0, 0, 1], N_ = [0, 0, -1], E_ = [1, 0, 0], O_ = [-1, 0, 0];
+const LY = H0 / 2, UY = H0 + H1 / 2;
+const ROOMS = [
+  ['Terrasse', [[17, H0, 5.5, UP]]],
+  ['Salle de lecture', [[13, LY, 0, S_], [W, LY, 3.25, E_]]],
+  ['Salle polyvalente', [[10, UY, 0, S_], [10, UY, D, N_], [W1, UY, 5.5, E_], [10, TOP, 5.5, UP]]],
+  ['Bureaux', [[3, UY, 0, S_], [0, UY, 3.25, O_], [3, TOP, 3.25, UP]]],
+  ['Hall d’accueil', [[3, LY, 0, S_], [0, LY, 5.5, O_], [3, LY, D, N_]]],
+  ['Atelier', [[W, LY, 8.75, E_], [16, LY, D, N_]]],
+  ['Sanitaires et locaux', [[9, LY, D, N_]]],
+  ['Non renseigné', [[3, UY, D, N_], [0, UY, 8.75, O_], [3, TOP, 8.75, UP]], true],
+];
+const labelBox = $('labels');
+// Ordre = priorité d'affichage quand la place manque.
+const labels = ROOMS.map(([text, anchors, flag]) => {
+  const el = document.createElement('div');
+  el.className = 'lbl' + (flag ? ' flag' : '');
+  el.textContent = text;
+  labelBox.append(el);
+  return {
+    el,
+    anchors: anchors.map(([x, y, n, nrm]) => ({ p: P(x, y, n), nrm: new THREE.Vector3(...nrm) })),
+  };
+});
+const ray = new THREE.Raycaster();
+const toCam = new THREE.Vector3(), probe = new THREE.Vector3();
+function placeLabels() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const placed = [];
+  for (const L of labels) {
+    let best = null, bestDot = 0.22;
+    for (const a of L.anchors) {
+      toCam.copy(camera.position).sub(a.p);
+      const dist = toCam.length();
+      toCam.divideScalar(dist);
+      const dot = toCam.dot(a.nrm);
+      if (dot <= bestDot) continue;
+      probe.copy(a.p).addScaledVector(a.nrm, 0.05);
+      ray.set(probe, toCam);
+      ray.far = dist;
+      if (ray.intersectObjects(solids, false).length) continue;
+      best = a; bestDot = dot;
+    }
+    if (!best) { L.el.style.display = 'none'; continue; }
+    probe.copy(best.p).project(camera);
+    const sx = (probe.x + 1) / 2 * w, sy = (1 - probe.y) / 2 * h;
+    L.el.style.display = '';
+    L.size = L.size || [L.el.offsetWidth, L.el.offsetHeight];
+    const hw = L.size[0] / 2 + 2, hh = L.size[1] / 2 + 1;
+    if (placed.some(q => Math.abs(q.x - sx) < q.hw + hw && Math.abs(q.y - sy) < q.hh + hh)) {
+      L.el.style.display = 'none';
+      continue;
+    }
+    placed.push({ x: sx, y: sy, hw, hh });
+    L.el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) translate(-50%, -50%)`;
+  }
+}
+
+/* ---------- Boussole ---------- */
+const needle = $('needle'), needleN = $('needle-n');
+function updateCompass() {
+  const t = controls.getAzimuthalAngle();          // 0 : caméra au sud, nord en haut de l'écran
+  needle.setAttribute('transform', `rotate(${(t / DEG).toFixed(1)})`);
+  const r = 37;
+  needleN.setAttribute('x', (Math.sin(t) * r).toFixed(1));
+  needleN.setAttribute('y', (-Math.cos(t) * r).toFixed(1));
+}
+
+/* ---------- Caméra et boucle de rendu ---------- */
+const VIEW_AZ = 28 * DEG, VIEW_POLAR = 56 * DEG;
+let touched = false;
+function frame() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  if (!touched) {
+    const t = Math.tan(camera.fov * DEG / 2);
+    const d = Math.max(23.5 / t, 25 / (t * camera.aspect));
+    camera.position.set(
+      target.x + d * Math.sin(VIEW_POLAR) * Math.sin(VIEW_AZ),
+      target.y + d * Math.cos(VIEW_POLAR),
+      target.z + d * Math.sin(VIEW_POLAR) * Math.cos(VIEW_AZ)
+    );
+    controls.minDistance = 22;
+    controls.maxDistance = Math.max(d * 2.2, 160);
+    controls.update();
+  }
+  needsRender = true;
+}
+controls.addEventListener('start', () => { touched = true; });
+controls.addEventListener('change', () => { needsRender = true; });
+new ResizeObserver(frame).observe(stage);
+
+hourEl.addEventListener('input', update);
+dayEl.addEventListener('input', update);
+$('b-jun').addEventListener('click', () => { dayEl.value = DAY_JUN; update(); });
+$('b-dec').addEventListener('click', () => { dayEl.value = DAY_DEC; update(); });
+
+frame();
+update();
+renderer.shadowMap.needsUpdate = true;
+
+function loop() {
+  requestAnimationFrame(loop);
+  controls.update();
+  if (!needsRender) return;
+  needsRender = false;
+  camera.updateMatrixWorld();
+  renderer.render(scene, camera);
+  placeLabels();
+  updateCompass();
+}
+loop();
+</script>
+</body>
+</html>

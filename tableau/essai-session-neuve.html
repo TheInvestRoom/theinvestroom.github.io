@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suivi de chantier : tableau de bord</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-3: #6f6d68;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11,11,11,.10);
+  --wash: rgba(11,11,11,.05);
+  --engage: #2a78d6;
+  --prevu: #52514e;
+  --vert: #1a7f4b;
+  --orange: #f08a00;
+  --rouge: #c62828;
+  --accent: #2a78d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #a3a198;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255,255,255,.10);
+    --wash: rgba(255,255,255,.06);
+    --engage: #3987e5;
+    --prevu: #c3c2b7;
+    --accent: #3987e5;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.page { max-width: 1080px; margin: 0 auto; padding: 24px 20px 48px; }
+header h1 { font-size: 24px; line-height: 1.2; font-weight: 650; margin: 0 0 4px; }
+header p { margin: 0; color: var(--ink-2); font-size: 14px; }
+h2 { font-size: 16px; font-weight: 650; margin: 0; }
+.sous-titre { color: var(--ink-2); font-size: 13px; margin: 2px 0 0; }
+
+.filtres {
+  position: sticky; top: 0; z-index: 5; background: var(--page);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 12px 0; margin: 8px 0 8px; border-bottom: 1px solid var(--grid);
+}
+.segments { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 8px; background: var(--wash); }
+.filtres .etiquette { font-size: 13px; color: var(--ink-2); }
+button { font: inherit; color: inherit; }
+.segments button {
+  border: 0; background: transparent; padding: 5px 11px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--ink-2); min-height: 30px;
+}
+.segments button small { font-size: 12px; color: var(--ink-3); margin-left: 3px; }
+.segments button:hover { background: var(--wash); }
+.segments button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--ring); }
+.puce {
+  display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--axis); background: var(--surface);
+  border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer; min-height: 30px;
+}
+.puce:hover { background: var(--wash); }
+.puce b { font-weight: 600; }
+.aide { font-size: 13px; color: var(--ink-3); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.cartes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.carte, .bloc { background: var(--surface); border-radius: 10px; box-shadow: 0 0 0 1px var(--ring); }
+.carte { padding: 16px 18px; min-width: 0; }
+.carte .libelle { font-size: 13px; color: var(--ink-2); }
+.carte .valeur { font-size: 30px; line-height: 1.2; font-weight: 650; margin-top: 4px; overflow-wrap: anywhere; }
+.carte .detail { font-size: 13px; color: var(--ink-2); margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bloc { padding: 18px; margin-top: 16px; }
+.entete-bloc { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px 24px; margin-bottom: 12px; }
+.legende { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-2); align-items: center; }
+.legende span.item { display: inline-flex; align-items: center; gap: 6px; }
+
+.forme { flex: none; display: inline-block; vertical-align: -1px; }
+
+/* Courbe */
+.graphe { position: relative; }
+.graphe svg { display: block; width: 100%; overflow: visible; }
+.graphe svg:focus-visible { outline-offset: 4px; border-radius: 4px; }
+.graphe svg:focus:not(:focus-visible) { outline: none; }
+.graphe text { font-size: 12px; fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+.graphe text.fin { fill: var(--ink); }
+.bulle {
+  position: absolute; top: 8px; pointer-events: none; background: var(--surface); box-shadow: 0 0 0 1px var(--ring), 0 4px 14px rgba(0,0,0,.14);
+  border-radius: 8px; padding: 8px 10px; font-size: 13px; min-width: 190px; z-index: 3; display: none;
+}
+.bulle .titre { color: var(--ink-2); margin-bottom: 4px; }
+.bulle .rang { display: flex; align-items: center; gap: 8px; }
+.bulle .rang b { font-weight: 650; font-variant-numeric: tabular-nums; }
+.bulle .rang span:last-child { color: var(--ink-2); margin-left: auto; padding-left: 12px; }
+.cle { width: 14px; height: 0; border-top: 2px solid; flex: none; }
+.cle.tirets { border-top-style: dashed; }
+
+/* Barres */
+.echelle, .ligne { display: grid; grid-template-columns: minmax(130px, 190px) minmax(0, 1fr) 96px; column-gap: 12px; }
+.echelle { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; height: 20px; }
+.echelle .plot { position: relative; }
+.echelle .plot span { position: absolute; top: 0; white-space: nowrap; }
+.ligne {
+  width: 100%; border: 0; background: transparent; text-align: left; padding: 0; cursor: pointer; align-items: stretch; border-radius: 6px; min-height: 44px;
+}
+.ligne:hover { background: var(--wash); }
+.ligne[aria-pressed="true"] { background: var(--wash); box-shadow: inset 0 0 0 1px var(--axis); }
+.ligne .nom { padding: 4px 0 4px 8px; align-self: center; min-width: 0; }
+.ligne .nom b { display: block; font-weight: 600; font-size: 14px; line-height: 1.25; }
+.ligne .nom small { display: block; font-size: 12px; color: var(--ink-3); line-height: 1.25; }
+.ligne .plot { position: relative; min-width: 0; }
+.ligne .repere { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grid); }
+.ligne .repere.zero { background: var(--axis); }
+.ligne .barre { position: absolute; top: 50%; height: 18px; margin-top: -9px; min-width: 2px; }
+.ligne .barre.pos { border-radius: 0 4px 4px 0; }
+.ligne .barre.neg { border-radius: 4px 0 0 4px; }
+.barre.vert { background: var(--vert); }
+.barre.orange { background: var(--orange); }
+.barre.rouge { background: var(--rouge); }
+.ligne .val {
+  position: absolute; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 600; white-space: nowrap; background: var(--surface); padding: 0 4px; border-radius: 3px; font-variant-numeric: tabular-nums;
+}
+.ligne:hover .val, .ligne[aria-pressed="true"] .val { background: transparent; }
+.ligne .val.dedans { background: transparent; color: #fff; }
+.ligne .val.dedans .forme * { fill: #fff; }
+.ligne .euros { align-self: center; text-align: right; font-size: 13px; color: var(--ink-2); padding-right: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ligne.attenue .barre { opacity: .3; }
+.ligne.attenue .nom b, .ligne.attenue .val { font-weight: 500; color: var(--ink-2); }
+
+/* Tables */
+.defile { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-weight: 600; font-size: 13px; color: var(--ink-2); border-bottom-color: var(--axis); }
+tfoot td { font-weight: 650; border-top: 1px solid var(--axis); border-bottom: 0; }
+td small { color: var(--ink-3); font-size: 12px; margin-left: 6px; }
+.note { font-size: 13px; color: var(--ink-2); margin: 12px 0 0; }
+.formules { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
+.formules div { margin-top: 6px; }
+.formules code { display: block; margin-top: 2px; padding: 6px 8px; background: var(--wash); border-radius: 6px; font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--ink); overflow-wrap: anywhere; }
+.erreur { background: var(--surface); box-shadow: inset 0 0 0 2px var(--rouge); border-radius: 8px; padding: 12px 14px; margin-top: 16px; }
+.cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .cartes { grid-template-columns: 1fr; }
+  .page { padding: 16px 12px 32px; }
+  .bloc { padding: 14px 12px; }
+  .echelle, .ligne { grid-template-columns: minmax(0, 1fr) 84px; }
+  .echelle .vide { display: none; }
+  .echelle .plot { grid-column: 1 / -1; }
+  .echelle .droite { display: none; }
+  .ligne { padding-bottom: 4px; }
+  .ligne .nom { grid-column: 1; grid-row: 1; }
+  .ligne .euros { grid-column: 2; grid-row: 1; }
+  .ligne .plot { grid-column: 1 / -1; grid-row: 2; height: 28px; }
+  .filtres { position: static; }
+}
+@media (forced-colors: active) {
+  .barre, .cle { forced-color-adjust: none; background: CanvasText; border-color: CanvasText; }
+  .ligne[aria-pressed="true"] { outline: 2px solid Highlight; }
+}
+@media print {
+  .filtres { position: static; }
+  .carte, .bloc { box-shadow: 0 0 0 1px #bbb; break-inside: avoid; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Suivi de chantier</h1>
+    <p id="source"></p>
+  </header>
+
+  <div class="filtres" role="group" aria-label="Filtres de la page">
+    <span class="etiquette">Trimestre</span>
+    <div class="segments" id="trimestres"></div>
+    <span id="zone-lot"></span>
+  </div>
+  <div id="etat" class="cache" aria-live="polite"></div>
+  <div id="erreurs"></div>
+
+  <section class="cartes" aria-label="Chiffres clés">
+    <div class="carte"><div class="libelle">Budget prévu</div><div class="valeur" id="c-prevu"></div><div class="detail" id="c-prevu-d"></div></div>
+    <div class="carte"><div class="libelle">Engagé</div><div class="valeur" id="c-engage"></div><div class="detail" id="c-engage-d"></div></div>
+    <div class="carte"><div class="libelle">Écart (engagé − prévu)</div><div class="valeur" id="c-ecart"></div><div class="detail" id="c-ecart-d"></div></div>
+  </section>
+
+  <section class="bloc">
+    <div class="entete-bloc">
+      <div><h2>Prévu et engagé cumulés par mois</h2><p class="sous-titre" id="courbe-st"></p></div>
+      <div class="legende">
+        <span class="item"><span class="cle tirets" style="border-color:var(--prevu)"></span>Prévu</span>
+        <span class="item"><span class="cle" style="border-color:var(--engage)"></span>Engagé</span>
+      </div>
+    </div>
+    <div class="graphe" id="graphe"><div class="bulle" id="bulle"></div></div>
+  </section>
+
+  <section class="bloc">
+    <div class="entete-bloc">
+      <div><h2>Écart par lot, en % du prévu</h2><p class="sous-titre" id="barres-st"></p></div>
+      <div class="legende" id="legende-statuts"></div>
+    </div>
+    <div id="barres"></div>
+  </section>
+
+  <section class="bloc">
+    <div class="entete-bloc"><div><h2>Détail par mois</h2><p class="sous-titre" id="mois-st"></p></div></div>
+    <div class="defile"><table id="t-mois"></table></div>
+  </section>
+
+  <section class="bloc">
+    <div class="entete-bloc"><div><h2>Totaux à vérifier dans Excel</h2><p class="sous-titre" id="totaux-st"></p></div></div>
+    <div class="defile"><table id="t-totaux"></table></div>
+    <div class="formules" id="formules"></div>
+    <p class="note">Écart = engagé − prévu. Écart en % = écart ÷ prévu. Les couleurs se décident sur la valeur exacte, pas sur la valeur arrondie affichée. Les trimestres sont ceux de l'année civile.</p>
+  </section>
+</div>
+
+<script type="application/json" id="donnees">{"fichier":"suivi-chantier.xlsx","feuille":"Suivi chantier","premiere":2,"derniere":73,"lignes":[{"ligne":2,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"janvier","prevu":49400,"engage":50240},{"ligne":3,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"février","prevu":51800,"engage":52700},{"ligne":4,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"mars","prevu":39800,"engage":40530},{"ligne":5,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"avril","prevu":54700,"engage":55280},{"ligne":6,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"mai","prevu":40000,"engage":40830},{"ligne":7,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"juin","prevu":48700,"engage":49850},{"ligne":8,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"juillet","prevu":38100,"engage":38210},{"ligne":9,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"août","prevu":50300,"engage":50920},{"ligne":10,"lot":"Gros œuvre","entreprise":"Bâti-Ouest","mois":"septembre","prevu":39200,"engage":40100},{"ligne":11,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"janvier","prevu":20300,"engage":20210},{"ligne":12,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"février","prevu":18200,"engage":18220},{"ligne":13,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"mars","prevu":17100,"engage":17050},{"ligne":14,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"avril","prevu":21900,"engage":22110},{"ligne":15,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"mai","prevu":15500,"engage":15660},{"ligne":16,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"juin","prevu":20500,"engage":32610},{"ligne":17,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"juillet","prevu":21100,"engage":33500},{"ligne":18,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"août","prevu":16000,"engage":15830},{"ligne":19,"lot":"Charpente bois","entreprise":"Atelier Ligne","mois":"septembre","prevu":17400,"engage":17230},{"ligne":20,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"janvier","prevu":16100,"engage":16390},{"ligne":21,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"février","prevu":16900,"engage":17060},{"ligne":22,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"mars","prevu":17000,"engage":17160},{"ligne":23,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"avril","prevu":18100,"engage":18420},{"ligne":24,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"mai","prevu":17300,"engage":17680},{"ligne":25,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"juin","prevu":13700,"engage":14100},{"ligne":26,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"juillet","prevu":16600,"engage":16750},{"ligne":27,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"août","prevu":17700,"engage":18020},{"ligne":28,"lot":"Menuiseries","entreprise":"Verre & Cadre","mois":"septembre","prevu":12600,"engage":12980},{"ligne":29,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"janvier","prevu":10600,"engage":10730},{"ligne":30,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"février","prevu":9700,"engage":9840},{"ligne":31,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"mars","prevu":8600,"engage":8800},{"ligne":32,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"avril","prevu":10100,"engage":10190},{"ligne":33,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"mai","prevu":8700,"engage":8760},{"ligne":34,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"juin","prevu":10200,"engage":10370},{"ligne":35,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"juillet","prevu":10200,"engage":10340},{"ligne":36,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"août","prevu":9200,"engage":9420},{"ligne":37,"lot":"Couverture","entreprise":"Toitures Ménard","mois":"septembre","prevu":10700,"engage":10800},{"ligne":38,"lot":"Électricité","entreprise":"Courant Sud","mois":"janvier","prevu":12000,"engage":11950},{"ligne":39,"lot":"Électricité","entreprise":"Courant Sud","mois":"février","prevu":10400,"engage":10280},{"ligne":40,"lot":"Électricité","entreprise":"Courant Sud","mois":"mars","prevu":12400,"engage":12270},{"ligne":41,"lot":"Électricité","entreprise":"Courant Sud","mois":"avril","prevu":11700,"engage":11530},{"ligne":42,"lot":"Électricité","entreprise":"Courant Sud","mois":"mai","prevu":12400,"engage":12220},{"ligne":43,"lot":"Électricité","entreprise":"Courant Sud","mois":"juin","prevu":14000,"engage":13740},{"ligne":44,"lot":"Électricité","entreprise":"Courant Sud","mois":"juillet","prevu":10300,"engage":10130},{"ligne":45,"lot":"Électricité","entreprise":"Courant Sud","mois":"août","prevu":15100,"engage":14840},{"ligne":46,"lot":"Électricité","entreprise":"Courant Sud","mois":"septembre","prevu":13700,"engage":13480},{"ligne":47,"lot":"CVC","entreprise":"Air Plus","mois":"janvier","prevu":17500,"engage":18690},{"ligne":48,"lot":"CVC","entreprise":"Air Plus","mois":"février","prevu":16900,"engage":17790},{"ligne":49,"lot":"CVC","entreprise":"Air Plus","mois":"mars","prevu":15900,"engage":16780},{"ligne":50,"lot":"CVC","entreprise":"Air Plus","mois":"avril","prevu":12100,"engage":12880},{"ligne":51,"lot":"CVC","entreprise":"Air Plus","mois":"mai","prevu":13600,"engage":14330},{"ligne":52,"lot":"CVC","entreprise":"Air Plus","mois":"juin","prevu":15300,"engage":16270},{"ligne":53,"lot":"CVC","entreprise":"Air Plus","mois":"juillet","prevu":16200,"engage":17100},{"ligne":54,"lot":"CVC","entreprise":"Air Plus","mois":"août","prevu":14600,"engage":15280},{"ligne":55,"lot":"CVC","entreprise":"Air Plus","mois":"septembre","prevu":15900,"engage":16810},{"ligne":56,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"janvier","prevu":7900,"engage":7990},{"ligne":57,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"février","prevu":10600,"engage":10530},{"ligne":58,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"mars","prevu":10900,"engage":11060},{"ligne":59,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"avril","prevu":9700,"engage":9750},{"ligne":60,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"mai","prevu":11100,"engage":11200},{"ligne":61,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"juin","prevu":8400,"engage":8340},{"ligne":62,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"juillet","prevu":9300,"engage":9430},{"ligne":63,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"août","prevu":8300,"engage":8390},{"ligne":64,"lot":"Plâtrerie","entreprise":"Cloisons Dumas","mois":"septembre","prevu":7800,"engage":7760},{"ligne":65,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"janvier","prevu":7200,"engage":7000},{"ligne":66,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"février","prevu":7100,"engage":6940},{"ligne":67,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"mars","prevu":8300,"engage":8070},{"ligne":68,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"avril","prevu":6900,"engage":6800},{"ligne":69,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"mai","prevu":9200,"engage":9040},{"ligne":70,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"juin","prevu":8200,"engage":8050},{"ligne":71,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"juillet","prevu":8900,"engage":8630},{"ligne":72,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"août","prevu":7400,"engage":7150},{"ligne":73,"lot":"Sols et peintures","entreprise":"Finitions Roy","mois":"septembre","prevu":8800,"engage":8500}]}</script>
+<script>
+"use strict";
+(function () {
+  var SOURCE = JSON.parse(document.getElementById("donnees").textContent);
+  var LIGNES = SOURCE.lignes;
+  var CALENDRIER = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  var ABREGE = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+  var SEUIL_VERT = 2, SEUIL_ORANGE = 8;
+  var STATUTS = {
+    vert:   { nom: "Vert",   texte: "jusqu'à +2 %" },
+    orange: { nom: "Orange", texte: "de +2 % à +8 %" },
+    rouge:  { nom: "Rouge",  texte: "au-delà de +8 %" }
+  };
+  var etat = { trimestre: null, lot: null };
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, texte) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (texte !== undefined) n.textContent = texte;
+    return n;
+  }
+  function svg(tag, attrs, parent) {
+    var n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  var nbEntier = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+  var nbSigne = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0, signDisplay: "exceptZero" });
+  function euros(v) { return nbEntier.format(v) + " €"; }
+  function eurosS(v) { return nbSigne.format(v) + " €"; }
+  function pct(v, dec) {
+    if (v === null) return "n.d.";
+    return new Intl.NumberFormat("fr-FR", { minimumFractionDigits: dec, maximumFractionDigits: dec, signDisplay: "exceptZero" }).format(v) + " %";
+  }
+
+  function idxMois(m) { return CALENDRIER.indexOf(m); }
+  function trimestreDe(m) { return "T" + (Math.floor(idxMois(m) / 3) + 1); }
+
+  /* Toute valeur affichée sort de cette fonction, appliquée aux lignes du fichier. */
+  function agreger(lignes) {
+    var p = 0, e = 0;
+    lignes.forEach(function (l) { p += l.prevu; e += l.engage; });
+    var ec = e - p;
+    return { prevu: p, engage: e, ecart: ec, pct: p > 0 ? ec / p * 100 : null, n: lignes.length, statut: statut(ec, p) };
+  }
+  /* Comparaison sans division pour qu'un écart de 2 % ou 8 % pile reste dans sa classe. */
+  function statut(ecart, prevu) {
+    if (prevu <= 0) return null;
+    if (ecart * 100 <= SEUIL_VERT * prevu) return "vert";
+    if (ecart * 100 <= SEUIL_ORANGE * prevu) return "orange";
+    return "rouge";
+  }
+  function forme(st, taille) {
+    taille = taille || 12;
+    var s = svg("svg", { width: taille, height: taille, viewBox: "0 0 12 12", "class": "forme", "aria-hidden": "true" });
+    var c = "var(--" + st + ")";
+    if (st === "vert") svg("circle", { cx: 6, cy: 6, r: 5, fill: c }, s);
+    else if (st === "orange") svg("path", { d: "M6 .6 11.4 6 6 11.4 .6 6z", fill: c }, s);
+    else if (st === "rouge") svg("path", { d: "M6 1 11.6 11H.4z", fill: c }, s);
+    return s;
+  }
+
+  var MOIS_PRESENTS = [], LOTS = [], TRIMESTRES = [], ENTREPRISE = {};
+  (function preparer() {
+    var inconnus = [];
+    LIGNES.forEach(function (l) {
+      if (idxMois(l.mois) < 0) inconnus.push(l.ligne);
+      if (MOIS_PRESENTS.indexOf(l.mois) < 0) MOIS_PRESENTS.push(l.mois);
+      if (LOTS.indexOf(l.lot) < 0) LOTS.push(l.lot);
+      ENTREPRISE[l.lot] = l.entreprise;
+    });
+    MOIS_PRESENTS.sort(function (a, b) { return idxMois(a) - idxMois(b); });
+    MOIS_PRESENTS.forEach(function (m) { var t = trimestreDe(m); if (TRIMESTRES.indexOf(t) < 0) TRIMESTRES.push(t); });
+    if (inconnus.length) {
+      $("erreurs").appendChild(el("div", "erreur", "Mois non reconnu aux lignes Excel " + inconnus.join(", ") + " : ces lignes faussent les trimestres."));
+    }
+  })();
+
+  function lignesTrimestre() {
+    return LIGNES.filter(function (l) { return !etat.trimestre || trimestreDe(l.mois) === etat.trimestre; });
+  }
+  function lignesVue() {
+    return lignesTrimestre().filter(function (l) { return !etat.lot || l.lot === etat.lot; });
+  }
+  function moisVue(lignes) {
+    return MOIS_PRESENTS.filter(function (m) { return lignes.some(function (l) { return l.mois === m; }); });
+  }
+  function periode(mois) {
+    if (!mois.length) return "aucun mois";
+    return mois.length === 1 ? mois[0] : mois[0] + " à " + mois[mois.length - 1];
+  }
+  function libelleVue() {
+    return (etat.lot || "Tous les lots") + " · " + periode(moisVue(lignesVue()));
+  }
+
+  /* Domaine fixe, calculé sur tous les lots et trimestres : les barres restent comparables d'un filtre à l'autre. */
+  var DOMAINE = (function () {
+    var min = 0, max = SEUIL_ORANGE;
+    LOTS.forEach(function (lot) {
+      [null].concat(TRIMESTRES).forEach(function (t) {
+        var a = agreger(LIGNES.filter(function (l) { return l.lot === lot && (!t || trimestreDe(l.mois) === t); }));
+        if (a.pct !== null) { min = Math.min(min, a.pct); max = Math.max(max, a.pct); }
+      });
+    });
+    return { min: min * 1.1, max: max * 1.04 };
+  })();
+  function xPct(v) { return (v - DOMAINE.min) / (DOMAINE.max - DOMAINE.min) * 100; }
+
+  /* ---------- Filtres ---------- */
+  function rendreFiltres() {
+    var box = $("trimestres");
+    box.textContent = "";
+    [null].concat(TRIMESTRES).forEach(function (t) {
+      var b = el("button");
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(etat.trimestre === t));
+      b.dataset.trimestre = t || "tous";
+      if (!t) b.textContent = "Tous";
+      else {
+        var ms = MOIS_PRESENTS.filter(function (m) { return trimestreDe(m) === t; });
+        b.appendChild(document.createTextNode(t));
+        b.appendChild(el("small", "", ABREGE[idxMois(ms[0])] + "–" + ABREGE[idxMois(ms[ms.length - 1])]));
+      }
+      b.addEventListener("click", function () {
+        etat.trimestre = t; rendre();
+        var f = box.querySelector('[data-trimestre="' + (t || "tous") + '"]'); if (f) f.focus();
+      });
+      box.appendChild(b);
+    });
+    var zone = $("zone-lot");
+    zone.textContent = "";
+    if (etat.lot) {
+      var p = el("button", "puce");
+      p.type = "button"; p.id = "retirer-lot";
+      p.setAttribute("aria-label", "Retirer le filtre sur le lot " + etat.lot);
+      p.appendChild(document.createTextNode("Lot : "));
+      p.appendChild(el("b", "", etat.lot));
+      var x = el("span", "", "✕"); x.setAttribute("aria-hidden", "true"); p.appendChild(x);
+      p.addEventListener("click", function () { etat.lot = null; rendre(); });
+      zone.appendChild(p);
+    } else {
+      zone.appendChild(el("span", "aide", "Cliquez sur un lot pour filtrer toute la page."));
+    }
+  }
+
+  /* ---------- Cartes ---------- */
+  function rendreCartes() {
+    var lignes = lignesVue(), a = agreger(lignes), mois = moisVue(lignes);
+    $("c-prevu").textContent = euros(a.prevu);
+    $("c-prevu-d").textContent = (etat.lot || "Tous les lots") + " · " + periode(mois);
+    $("c-engage").textContent = euros(a.engage);
+    $("c-engage-d").textContent = a.n + (a.n > 1 ? " lignes du fichier" : " ligne du fichier");
+    $("c-ecart").textContent = eurosS(a.ecart);
+    var d = $("c-ecart-d"); d.textContent = "";
+    if (a.statut) {
+      d.appendChild(forme(a.statut, 12));
+      var b = el("b", "", pct(a.pct, 1)); b.style.fontWeight = "650"; b.style.color = "var(--ink)";
+      d.appendChild(b);
+      d.appendChild(el("span", "", "· " + STATUTS[a.statut].nom + " (" + STATUTS[a.statut].texte + ")"));
+    }
+  }
+
+  /* ---------- Courbe ---------- */
+  function bornesY(max) {
+    if (max <= 0) return { pas: 1, top: 1 };
+    var brut = max / 5, ordre = Math.pow(10, Math.floor(Math.log10(brut))), r = brut / ordre;
+    var pas = (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * ordre;
+    return { pas: pas, top: Math.ceil(max / pas) * pas };
+  }
+  var pointCourant = null;
+  function rendreCourbe() {
+    var boite = $("graphe"), bulle = $("bulle");
+    var ancien = boite.querySelector("svg"); if (ancien) ancien.remove();
+    bulle.style.display = "none";
+    var lignes = lignesVue(), mois = moisVue(lignes);
+    $("courbe-st").textContent = libelleVue() + " · le cumul part du premier mois affiché";
+    var cumP = 0, cumE = 0;
+    var pts = mois.map(function (m) {
+      var a = agreger(lignes.filter(function (l) { return l.mois === m; }));
+      cumP += a.prevu; cumE += a.engage;
+      return { mois: m, p: cumP, e: cumE };
+    });
+    if (!pts.length) return;
+    var W = Math.max(boite.clientWidth, 280), etroit = W < 560, H = etroit ? 260 : 320;
+    var M = { g: 58, d: etroit ? 62 : 148, h: 12, b: 28 };
+    var iw = W - M.g - M.d, ih = H - M.h - M.b;
+    var dernier = pts[pts.length - 1];
+    var by = bornesY(Math.max(dernier.p, dernier.e));
+    function X(i) { return M.g + (pts.length === 1 ? iw / 2 : i / (pts.length - 1) * iw); }
+    function Y(v) { return M.h + ih - v / by.top * ih; }
+    var enK = by.top >= 10000;
+    var s = svg("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img", tabindex: "0",
+      "aria-label": "Courbe des cumuls. " + libelleVue() + ". Fin de période : prévu " + euros(dernier.p) + ", engagé " + euros(dernier.e) + ". Flèches gauche et droite pour parcourir les mois. Valeurs également dans le tableau Détail par mois." });
+    for (var v = 0; v <= by.top + by.pas / 2; v += by.pas) {
+      svg("line", { x1: M.g, x2: M.g + iw, y1: Y(v), y2: Y(v), stroke: v === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1 }, s);
+      var t = svg("text", { x: M.g - 8, y: Y(v) + 4, "text-anchor": "end" }, s);
+      t.textContent = enK ? nbEntier.format(v / 1000) + " k€" : nbEntier.format(v) + " €";
+    }
+    var pasEtiquette = W < 420 && pts.length > 5 ? 2 : 1;
+    pts.forEach(function (d, i) {
+      if (i % pasEtiquette) return;
+      var t = svg("text", { x: X(i), y: H - 8, "text-anchor": "middle" }, s);
+      t.textContent = etroit ? ABREGE[idxMois(d.mois)] : d.mois;
+    });
+    function chemin(cle) { return pts.map(function (d, i) { return (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(d[cle]).toFixed(1); }).join(" "); }
+    var aller = pts.map(function (d, i) { return X(i).toFixed(1) + "," + Y(d.e).toFixed(1); });
+    var retour = pts.slice().reverse().map(function (d, i) { return X(pts.length - 1 - i).toFixed(1) + "," + Y(d.p).toFixed(1); });
+    svg("polygon", { points: aller.concat(retour).join(" "), fill: "var(--engage)", "fill-opacity": .12 }, s);
+    svg("path", { d: chemin("e"), fill: "none", stroke: "var(--engage)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, s);
+    svg("path", { d: chemin("p"), fill: "none", stroke: "var(--prevu)", "stroke-width": 2, "stroke-dasharray": "5 4", "stroke-linejoin": "round" }, s);
+
+    /* Étiquettes de fin : écartées seulement si besoin, avec un trait de rappel. */
+    var xf = X(pts.length - 1);
+    var haut = dernier.e >= dernier.p ? { n: "Engagé", v: dernier.e } : { n: "Prévu", v: dernier.p };
+    var bas = dernier.e >= dernier.p ? { n: "Prévu", v: dernier.p } : { n: "Engagé", v: dernier.e };
+    var yh = Y(haut.v), yb = Y(bas.v), ecartMin = 18;
+    if (yb - yh < ecartMin) { var mil = (yh + yb) / 2; yh = mil - ecartMin / 2; yb = mil + ecartMin / 2; }
+    if (yh < 10) { yb += 10 - yh; yh = 10; }
+    [[haut, yh], [bas, yb]].forEach(function (c) {
+      var y0 = Y(c[0].v);
+      svg("line", { x1: xf + 6, y1: y0, x2: xf + 14, y2: c[1], stroke: "var(--axis)", "stroke-width": 1 }, s);
+      var t = svg("text", { x: xf + 18, y: c[1] + 4, "class": "fin" }, s);
+      t.textContent = etroit ? c[0].n : c[0].n + " " + euros(c[0].v);
+    });
+    [["p", "var(--prevu)"], ["e", "var(--engage)"]].forEach(function (c) {
+      svg("circle", { cx: xf, cy: Y(dernier[c[0]]), r: 4, fill: c[1], stroke: "var(--surface)", "stroke-width": 2 }, s);
+    });
+
+    /* Survol : la ligne verticale se cale sur le mois le plus proche. */
+    var trait = svg("line", { y1: M.h, y2: M.h + ih, stroke: "var(--ink-3)", "stroke-width": 1, visibility: "hidden" }, s);
+    var dotP = svg("circle", { r: 4, fill: "var(--prevu)", stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }, s);
+    var dotE = svg("circle", { r: 4, fill: "var(--engage)", stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }, s);
+    function montrer(i) {
+      pointCourant = i;
+      var d = pts[i], x = X(i);
+      trait.setAttribute("x1", x); trait.setAttribute("x2", x); trait.setAttribute("visibility", "visible");
+      dotP.setAttribute("cx", x); dotP.setAttribute("cy", Y(d.p)); dotP.setAttribute("visibility", "visible");
+      dotE.setAttribute("cx", x); dotE.setAttribute("cy", Y(d.e)); dotE.setAttribute("visibility", "visible");
+      bulle.textContent = "";
+      bulle.appendChild(el("div", "titre", "Cumul à fin " + d.mois));
+      [[euros(d.e), "Engagé", "var(--engage)", ""], [euros(d.p), "Prévu", "var(--prevu)", " tirets"]].forEach(function (r) {
+        var rang = el("div", "rang"), cle = el("span", "cle" + r[3]);
+        cle.style.borderColor = r[2];
+        rang.appendChild(cle); rang.appendChild(el("b", "", r[0])); rang.appendChild(el("span", "", r[1]));
+        bulle.appendChild(rang);
+      });
+      var rg = el("div", "rang");
+      var espace = el("span", "cle"); espace.style.borderColor = "transparent";
+      rg.appendChild(espace);
+      rg.appendChild(el("b", "", eurosS(d.e - d.p) + " · " + pct(d.p > 0 ? (d.e - d.p) / d.p * 100 : null, 1)));
+      rg.appendChild(el("span", "", "Écart"));
+      bulle.appendChild(rg);
+      bulle.style.display = "block";
+      var bw = bulle.offsetWidth;
+      var gauche = x + 12 + bw > W ? x - bw - 12 : x + 12;
+      bulle.style.left = Math.max(0, Math.min(W - bw, gauche)) + "px";
+    }
+    function cacher() {
+      pointCourant = null;
+      bulle.style.display = "none";
+      [trait, dotP, dotE].forEach(function (n) { n.setAttribute("visibility", "hidden"); });
+    }
+    function suivre(ev) {
+      var r = s.getBoundingClientRect(), x = (ev.clientX - r.left) * W / r.width, best = 0, dist = Infinity;
+      pts.forEach(function (_, i) { var dd = Math.abs(X(i) - x); if (dd < dist) { dist = dd; best = i; } });
+      montrer(best);
+    }
+    s.addEventListener("pointermove", suivre);
+    /* Au doigt, un appui affiche le mois touché et la bulle reste jusqu'au prochain appui ailleurs. */
+    s.addEventListener("pointerdown", suivre);
+    s.addEventListener("pointerleave", function (ev) { if (ev.pointerType === "mouse") cacher(); });
+    s.addEventListener("blur", cacher);
+    /* Seule une arrivée au clavier place la bulle sur le dernier mois ; un clic ou un toucher garde le mois visé. */
+    s.addEventListener("focus", function () { if (s.matches(":focus-visible")) montrer(pts.length - 1); });
+    s.addEventListener("keydown", function (ev) {
+      if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+      ev.preventDefault();
+      var i = pointCourant === null ? pts.length - 1 : pointCourant;
+      montrer(Math.min(pts.length - 1, Math.max(0, i + (ev.key === "ArrowRight" ? 1 : -1))));
+    });
+    boite.insertBefore(s, bulle);
+  }
+
+  /* ---------- Barres par lot ---------- */
+  function statsLots() {
+    var base = lignesTrimestre();
+    return LOTS.map(function (lot) {
+      var a = agreger(base.filter(function (l) { return l.lot === lot; }));
+      a.lot = lot;
+      return a;
+    }).sort(function (x, y) {
+      if (x.pct === null) return 1;
+      if (y.pct === null) return -1;
+      return (y.pct - x.pct) || x.lot.localeCompare(y.lot, "fr");
+    });
+  }
+  function rendreBarres() {
+    var actif = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.lot : null;
+    var box = $("barres"); box.textContent = "";
+    var periodeBarres = periode(moisVue(lignesTrimestre()));
+    $("barres-st").textContent = "Du plus fort au plus faible · " + periodeBarres + (etat.lot ? " · cliquez sur un autre lot pour changer, ou sur le même pour tout revoir" : " · cliquez sur un lot pour filtrer la page");
+    var ech = el("div", "echelle");
+    var v1 = el("span", "vide"), pl = el("div", "plot"), v2 = el("span", "droite", "Écart en €");
+    v2.style.textAlign = "right"; v2.style.paddingRight = "8px";
+    [[0, "0", "translateX(-100%)"], [SEUIL_VERT, "+2 %", ""], [SEUIL_ORANGE, "+8 %", ""]].forEach(function (r) {
+      var sp = el("span", "", r[1]); sp.style.left = xPct(r[0]) + "%";
+      sp.style.transform = r[2] || "translateX(3px)";
+      pl.appendChild(sp);
+    });
+    ech.appendChild(v1); ech.appendChild(pl); ech.appendChild(v2);
+    box.appendChild(ech);
+
+    var zero = xPct(0);
+    statsLots().forEach(function (a) {
+      var b = el("button", "ligne");
+      b.type = "button"; b.dataset.lot = a.lot;
+      var choisi = etat.lot === a.lot;
+      b.setAttribute("aria-pressed", String(choisi));
+      if (etat.lot && !choisi) b.classList.add("attenue");
+      b.setAttribute("aria-label", a.lot + ", " + ENTREPRISE[a.lot] + " : écart " + pct(a.pct, 1) + ", " + eurosS(a.ecart) + (a.statut ? ", " + STATUTS[a.statut].nom : ""));
+      var nom = el("span", "nom");
+      nom.appendChild(el("b", "", a.lot)); nom.appendChild(el("small", "", ENTREPRISE[a.lot]));
+      var plot = el("span", "plot");
+      [[0, " zero"], [SEUIL_VERT, ""], [SEUIL_ORANGE, ""]].forEach(function (r) {
+        var rp = el("span", "repere" + r[1]); rp.style.left = xPct(r[0]) + "%"; plot.appendChild(rp);
+      });
+      if (a.pct !== null) {
+        var barre = el("span", "barre " + a.statut + (a.pct < 0 ? " neg" : " pos"));
+        var bout = xPct(a.pct);
+        if (a.pct >= 0) { barre.style.left = zero + "%"; barre.style.width = (bout - zero) + "%"; }
+        else { barre.style.left = bout + "%"; barre.style.width = (zero - bout) + "%"; }
+        plot.appendChild(barre);
+        var val = el("span", "val");
+        val.appendChild(forme(a.statut, 11));
+        val.appendChild(document.createTextNode(pct(a.pct, 1)));
+        val.dataset.pct = a.pct; val.dataset.bout = bout; val.dataset.zero = zero;
+        plot.appendChild(val);
+      }
+      b.appendChild(nom); b.appendChild(plot); b.appendChild(el("span", "euros", eurosS(a.ecart)));
+      b.addEventListener("click", function () {
+        etat.lot = etat.lot === a.lot ? null : a.lot;
+        rendre();
+        var f = $("barres").querySelector('[data-lot="' + CSS.escape(a.lot) + '"]'); if (f) f.focus();
+      });
+      box.appendChild(b);
+    });
+    placerValeurs();
+    if (actif) { var f = box.querySelector('[data-lot="' + CSS.escape(actif) + '"]'); if (f) f.focus(); }
+  }
+  /* Valeur à droite du bout de la barre ; si la place manque, elle passe dans la barre. */
+  function placerValeurs() {
+    document.querySelectorAll("#barres .val").forEach(function (val) {
+      var plot = val.parentNode, W = plot.clientWidth, w = val.offsetWidth;
+      var p = parseFloat(val.dataset.pct), bout = parseFloat(val.dataset.bout) / 100 * W, zero = parseFloat(val.dataset.zero) / 100 * W;
+      val.classList.remove("dedans");
+      val.style.right = ""; val.style.left = "";
+      if (p < 0) val.style.left = (zero + 4) + "px";
+      else if (bout + 4 + w <= W) val.style.left = (bout + 4) + "px";
+      else { val.classList.add("dedans"); val.style.left = Math.max(zero + 2, bout - w - 2) + "px"; }
+    });
+  }
+
+  /* ---------- Tableaux ---------- */
+  function cellule(tr, texte) { var td = el("td", "", texte); tr.appendChild(td); return td; }
+  function celluleStatut(tr, a, dec) {
+    var td = el("td");
+    if (a.statut) { td.appendChild(forme(a.statut, 10)); td.appendChild(document.createTextNode(" ")); }
+    td.appendChild(document.createTextNode(pct(a.pct, dec)));
+    tr.appendChild(td);
+  }
+  function entete(table, cols) {
+    var th = el("thead"), tr = el("tr");
+    cols.forEach(function (c) { var x = el("th", "", c); x.scope = "col"; tr.appendChild(x); });
+    th.appendChild(tr); table.appendChild(th);
+  }
+  function rendreMois() {
+    var t = $("t-mois"); t.textContent = "";
+    var lignes = lignesVue(), mois = moisVue(lignes);
+    $("mois-st").textContent = libelleVue();
+    entete(t, ["Mois", "Prévu", "Engagé", "Écart", "Écart %", "Prévu cumulé", "Engagé cumulé"]);
+    var tb = el("tbody"), cp = 0, ce = 0;
+    mois.forEach(function (m) {
+      var a = agreger(lignes.filter(function (l) { return l.mois === m; }));
+      cp += a.prevu; ce += a.engage;
+      var tr = el("tr"); tr.dataset.mois = m;
+      cellule(tr, m); cellule(tr, euros(a.prevu)); cellule(tr, euros(a.engage)); cellule(tr, eurosS(a.ecart));
+      celluleStatut(tr, a, 1);
+      cellule(tr, euros(cp)); cellule(tr, euros(ce));
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    var tot = agreger(lignes), tf = el("tfoot"), tr = el("tr");
+    cellule(tr, "Total"); cellule(tr, euros(tot.prevu)); cellule(tr, euros(tot.engage)); cellule(tr, eurosS(tot.ecart));
+    celluleStatut(tr, tot, 1); cellule(tr, ""); cellule(tr, "");
+    tf.appendChild(tr); t.appendChild(tf);
+  }
+  function rendreTotaux() {
+    var t = $("t-totaux"); t.textContent = "";
+    var lignes = lignesVue(), mois = moisVue(lignes);
+    $("totaux-st").textContent = "Sélection affichée : " + libelleVue() + " · ces totaux suivent les filtres";
+    entete(t, ["Lot", "Lignes", "Prévu", "Engagé", "Écart", "Écart %"]);
+    var tb = el("tbody");
+    LOTS.filter(function (lot) { return !etat.lot || lot === etat.lot; }).forEach(function (lot) {
+      var a = agreger(lignes.filter(function (l) { return l.lot === lot; }));
+      var tr = el("tr"); tr.dataset.lot = lot;
+      cellule(tr, lot); cellule(tr, String(a.n)); cellule(tr, euros(a.prevu)); cellule(tr, euros(a.engage)); cellule(tr, eurosS(a.ecart));
+      celluleStatut(tr, a, 2);
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    var tot = agreger(lignes), tf = el("tfoot"), tr = el("tr");
+    tr.id = "ligne-total";
+    cellule(tr, "Total"); cellule(tr, String(tot.n)); cellule(tr, euros(tot.prevu)); cellule(tr, euros(tot.engage)); cellule(tr, eurosS(tot.ecart));
+    celluleStatut(tr, tot, 2);
+    tf.appendChild(tr); t.appendChild(tf);
+
+    /* Formules à coller dans Excel (version française) pour la sélection affichée. */
+    var f = $("formules"); f.textContent = "";
+    f.appendChild(el("div", "", "Formules de la sélection, à coller dans une cellule vide de la feuille (Excel en français) :"));
+    function formule(col) {
+      var d = SOURCE.premiere, a = SOURCE.derniere;
+      var plage = col + d + ":" + col + a;
+      var critLot = etat.lot ? 'A' + d + ':A' + a + ';"' + etat.lot.replace(/"/g, '""') + '"' : null;
+      if (!etat.trimestre && !etat.lot) return "=SOMME(" + plage + ")";
+      if (!etat.trimestre) return "=SOMME.SI.ENS(" + plage + ";" + critLot + ")";
+      return "=" + mois.map(function (m) {
+        return "SOMME.SI.ENS(" + plage + (critLot ? ";" + critLot : "") + ";C" + d + ":C" + a + ';"' + m + '")';
+      }).join("+");
+    }
+    [["Prévu", "D"], ["Engagé", "E"]].forEach(function (r) {
+      var bloc = el("div", "", r[0]);
+      bloc.appendChild(el("code", "", formule(r[1])));
+      f.appendChild(bloc);
+    });
+  }
+
+  function rendre() {
+    rendreFiltres();
+    rendreCartes();
+    rendreCourbe();
+    rendreBarres();
+    rendreMois();
+    rendreTotaux();
+    var a = agreger(lignesVue());
+    $("etat").textContent = libelleVue() + ". Prévu " + euros(a.prevu) + ", engagé " + euros(a.engage) + ", écart " + eurosS(a.ecart) + ", " + pct(a.pct, 1) + ".";
+  }
+
+  $("source").textContent = "Source : " + SOURCE.fichier + ", feuille « " + SOURCE.feuille + " », " + LIGNES.length + " lignes, " + periode(MOIS_PRESENTS) + ".";
+  var leg = $("legende-statuts");
+  ["vert", "orange", "rouge"].forEach(function (k) {
+    var it = el("span", "item");
+    it.appendChild(forme(k, 12));
+    it.appendChild(document.createTextNode(STATUTS[k].nom + " : " + STATUTS[k].texte));
+    leg.appendChild(it);
+  });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && etat.lot) { etat.lot = null; rendre(); }
+  });
+  var largeur = 0, attente = null;
+  var surveillance = new ResizeObserver(function () {
+    var w = $("graphe").clientWidth;
+    if (w === largeur) return;
+    largeur = w;
+    cancelAnimationFrame(attente);
+    attente = requestAnimationFrame(function () { rendreCourbe(); placerValeurs(); });
+  });
+  rendre();
+  largeur = $("graphe").clientWidth;
+  surveillance.observe($("graphe"));
+})();
+</script>
+</body>
+</html>

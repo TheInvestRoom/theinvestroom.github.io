@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L'inertie thermique d'un bâtiment — guide d'étude visuel</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --surface-2: #f0efec;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #6f6e69;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --sun: #eda100;
+  --band: rgba(11,11,11,.04);
+  --mass: #52514e; --mass-ink: #ffffff; --wood: #c3c2b7; --wood-ink: #0b0b0b; --ins: #e8e7e1; --ins-ink: #0b0b0b;
+  --good: #006300; --bad: #b02a2a; --accent: #256abf;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #262624;
+    --ink: #f0efec; --ink-2: #c3c2b7; --muted: #a09f97;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --sun: #c98500;
+    --band: rgba(255,255,255,.04);
+    --mass: #77766f; --mass-ink: #ffffff; --wood: #52514e; --wood-ink: #f0efec; --ins: #383835; --ins-ink: #f0efec;
+    --good: #0ca30c; --bad: #e66767; --accent: #6da7ec;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --surface-2: #262624;
+  --ink: #f0efec; --ink-2: #c3c2b7; --muted: #a09f97;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --sun: #c98500;
+  --band: rgba(255,255,255,.04);
+  --mass: #77766f; --mass-ink: #ffffff; --wood: #52514e; --wood-ink: #f0efec; --ins: #383835; --ins-ink: #f0efec;
+  --good: #0ca30c; --bad: #e66767; --accent: #6da7ec;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 0 20px 64px; }
+header.top { padding: 48px 0 20px; position: relative; }
+.eyebrow { font-size: 13px; color: var(--ink-2); font-weight: 600; margin: 0 0 8px; }
+h1 { font-size: clamp(32px, 6vw, 46px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.02em; }
+.lead { font-size: 19px; line-height: 1.5; color: var(--ink-2); margin: 0; max-width: 680px; }
+#theme { position: absolute; top: 20px; right: 0; font: inherit; font-size: 13px; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; padding: 14px 0; border-top: 1px solid var(--grid); border-bottom: 1px solid var(--grid); margin: 24px 0 8px; }
+nav.toc a { color: var(--ink-2); text-decoration: none; }
+nav.toc a:hover { color: var(--ink); text-decoration: underline; }
+
+section { padding-top: 44px; scroll-margin-top: 8px; }
+h2 { font-size: 26px; line-height: 1.2; margin: 0 0 10px; letter-spacing: -.01em; }
+h2 .n { color: var(--muted); font-weight: 500; margin-right: 8px; font-size: 20px; }
+h3 { font-size: 17px; margin: 0 0 6px; line-height: 1.3; }
+p { margin: 0 0 12px; }
+.intro { color: var(--ink-2); max-width: 720px; }
+a { color: var(--accent); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+.grid { display: grid; gap: 12px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.key { background: var(--surface-2); border-radius: 10px; padding: 14px 18px; margin-top: 14px; }
+.key b:first-child { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 2px; }
+.takeaways { margin-top: 24px; }
+.takeaways .card b { display: block; margin-bottom: 4px; font-size: 17px; line-height: 1.3; }
+.takeaways .card { font-size: 15px; color: var(--ink-2); }
+.takeaways .card b { color: var(--ink); }
+.small { font-size: 14px; color: var(--ink-2); }
+figure { margin: 16px 0 0; }
+figcaption { font-size: 14px; color: var(--ink-2); margin-top: 8px; }
+svg text { font-family: inherit; }
+.mt { margin-top: 14px; }
+
+/* charts */
+.chart { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 16px 12px; margin-top: 14px; }
+.chart-title { font-weight: 600; font-size: 15px; margin: 0; }
+.chart-sub { font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 18px; height: 2px; border-radius: 2px; display: inline-block; }
+.plot { position: relative; outline-offset: 2px; touch-action: pan-y; }
+.plot svg { display: block; width: 100%; height: auto; }
+.tick { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.note { fill: var(--ink-2); font-size: 12.5px; }
+.note.strong { fill: var(--ink); font-weight: 600; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--axis); border-radius: 8px;
+  padding: 7px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.12); min-width: 150px; z-index: 2; display: none; line-height: 1.45; }
+.tip .h { color: var(--ink-2); font-size: 12px; margin-bottom: 2px; }
+.tip .r { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.tip i { width: 12px; height: 2px; border-radius: 2px; }
+.tip strong { font-variant-numeric: tabular-nums; }
+.tip .r span { color: var(--ink-2); }
+details.tv { margin-top: 8px; font-size: 13px; }
+details.tv summary { cursor: pointer; color: var(--ink-2); }
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-weight: 600; color: var(--ink-2); font-size: 13px; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.sel td { background: var(--surface-2); font-weight: 600; }
+
+/* materials */
+.mat td { vertical-align: middle; }
+.barcell { min-width: 112px; }
+.barcell .v { font-variant-numeric: tabular-nums; font-size: 13px; display: block; }
+.bar { height: 8px; background: var(--s1); border-radius: 0 4px 4px 0; display: block; min-width: 1px; margin-top: 2px; }
+
+/* controls */
+.ctrl { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: end; margin-top: 14px; }
+.ctrl label { display: flex; flex-direction: column; font-size: 13px; color: var(--ink-2); gap: 4px; }
+.ctrl label output { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ctrl .chk { flex-direction: row; align-items: center; gap: 7px; font-size: 14px; color: var(--ink); padding-bottom: 3px; }
+select { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 5px 8px; }
+input[type=range] { width: 210px; accent-color: var(--s1); }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.tile .l { font-size: 13px; color: var(--ink-2); }
+.tile .v { font-size: 26px; font-weight: 600; line-height: 1.25; }
+.tile .s { font-size: 12.5px; color: var(--ink-2); }
+
+/* walls */
+.wall svg { display: block; width: 100%; height: auto; margin-bottom: 10px; }
+.tag { display: inline-block; font-size: 13px; font-weight: 600; background: var(--surface-2); border-radius: 5px; padding: 1px 8px; margin: 0 4px 6px 0; }
+
+/* formulas */
+.f { font-family: "Cambria Math", Cambria, Georgia, serif; font-size: 20px; margin: 2px 0 6px; white-space: nowrap; overflow-x: auto; }
+.f i { font-style: italic; }
+
+/* myths */
+.myth p { margin: 0; font-size: 15px; color: var(--ink-2); }
+.myth b { display: block; color: var(--ink); margin-bottom: 4px; line-height: 1.35; }
+
+/* quiz */
+.q { margin-top: 12px; }
+.q fieldset { border: 0; padding: 0; margin: 0; }
+.q legend { font-weight: 600; padding: 0; margin-bottom: 8px; }
+.q label { display: flex; gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 15px; }
+.q label:hover { background: var(--surface-2); }
+.fb { font-size: 14px; margin: 8px 0 0; display: none; }
+.fb.ok b { color: var(--good); } .fb.ko b { color: var(--bad); }
+#score { font-weight: 600; margin-top: 12px; }
+ol.steps { padding-left: 22px; margin: 8px 0 0; }
+ol.steps li { margin-bottom: 8px; }
+details.sol { margin-top: 10px; }
+details.sol summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--ink-2); }
+
+@media print {
+  #theme, nav.toc, .ctrl, details.tv summary { display: none; }
+  body { background: #fff; }
+  .card, .chart, .tile { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <button id="theme" type="button">Clair / sombre</button>
+  <p class="eyebrow">Guide d'étude visuel · thermique du bâtiment</p>
+  <h1>L'inertie thermique d'un bâtiment</h1>
+  <p class="lead">La capacité d'un bâtiment à stocker de la chaleur dans sa masse, puis à la restituer plus tard. Elle lisse et retarde les variations de température, sans jamais créer de fraîcheur par elle-même.</p>
+  <div class="grid g3 takeaways">
+    <div class="card"><b>Stocker puis restituer</b>Les parois lourdes jouent le rôle d'une batterie de chaleur : elles se chargent quand il fait chaud et se déchargent quand il fait frais.</div>
+    <div class="card"><b>Deux effets mesurables</b>L'<em>amortissement</em> réduit l'amplitude des variations. Le <em>déphasage</em> retarde le moment du pic.</div>
+    <div class="card"><b>Inertie ≠ isolation</b>L'isolation freine le flux de chaleur. L'inertie le stocke. Un bon bâtiment d'été combine les deux, et se décharge la nuit.</div>
+  </div>
+  <nav class="toc" aria-label="Sommaire">
+    <a href="#s1">1 · L'image</a><a href="#s2">2 · Déphasage et amortissement</a><a href="#s3">3 · Matériaux</a><a href="#s4">4 · Absorption et transmission</a><a href="#s5">5 · Calculateur de paroi</a><a href="#s6">6 · Simulateur</a><a href="#s7">7 · Atout ou handicap</a><a href="#s8">8 · Idées reçues</a><a href="#s9">9 · Formules</a><a href="#s10">10 · S'entraîner</a>
+  </nav>
+</header>
+
+<section id="s1">
+  <h2><span class="n">1</span>L'idée en une image</h2>
+  <p class="intro">Un cycle de 24 heures en été, dans une pièce dont les parois lourdes sont en contact direct avec l'air intérieur.</p>
+  <div class="grid g2 mt">
+    <figure class="card" style="margin:0">
+      <svg viewBox="0 0 440 250" role="img" aria-label="Le jour, la chaleur de la pièce est absorbée par le mur et le plafond massifs.">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--s2)"/></marker>
+          <marker id="ac" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--s1)"/></marker>
+        </defs>
+        <circle cx="58" cy="58" r="20" fill="var(--sun)"/>
+        <text x="58" y="104" text-anchor="middle" class="note">Dehors</text><text x="58" y="120" text-anchor="middle" class="note">il fait chaud</text>
+        <rect x="116" y="20" width="310" height="34" rx="2" fill="var(--mass)"/>
+        <rect x="116" y="20" width="44" height="210" rx="2" fill="var(--mass)"/>
+        <rect x="116" y="226" width="310" height="8" fill="var(--axis)"/>
+        <text x="292" y="42" text-anchor="middle" fill="var(--mass-ink)" font-size="13">dalle massive</text>
+        <text transform="translate(143 150) rotate(-90)" text-anchor="middle" fill="var(--mass-ink)" font-size="13">mur massif</text>
+        <g stroke="var(--s2)" stroke-width="2.5" fill="none" marker-end="url(#ah)" stroke-linecap="round">
+          <path d="M226 110 L172 110"/><path d="M226 160 L172 160"/>
+          <path d="M270 112 L270 64"/><path d="M340 112 L340 64"/>
+        </g>
+        <text x="305" y="145" text-anchor="middle" class="note strong">Jour : la masse absorbe</text>
+        <text x="305" y="164" text-anchor="middle" class="note">l'air de la pièce</text>
+        <text x="305" y="180" text-anchor="middle" class="note">se réchauffe moins vite</text>
+      </svg>
+    </figure>
+    <figure class="card" style="margin:0">
+      <svg viewBox="0 0 440 250" role="img" aria-label="La nuit, le mur et la dalle restituent leur chaleur et l'air frais entrant par la fenêtre l'évacue.">
+        <path d="M70 40 a20 20 0 1 0 14 34 a16 16 0 1 1 -14 -34 z" fill="var(--axis)"/>
+        <text x="58" y="104" text-anchor="middle" class="note">Dehors</text><text x="58" y="120" text-anchor="middle" class="note">il fait frais</text>
+        <rect x="116" y="20" width="310" height="34" rx="2" fill="var(--mass)"/>
+        <rect x="116" y="20" width="44" height="118" fill="var(--mass)"/>
+        <rect x="116" y="192" width="44" height="38" fill="var(--mass)"/>
+        <rect x="116" y="226" width="310" height="8" fill="var(--axis)"/>
+        <text x="292" y="42" text-anchor="middle" fill="var(--mass-ink)" font-size="13">la dalle se décharge</text>
+        <g stroke="var(--s2)" stroke-width="2.5" fill="none" marker-end="url(#ah)" stroke-linecap="round">
+          <path d="M270 62 L270 104"/><path d="M340 62 L340 104"/>
+          <path d="M172 90 L222 90"/>
+          <path d="M226 150 L84 150" />
+        </g>
+        <path d="M84 176 L226 176" stroke="var(--s1)" stroke-width="2.5" fill="none" marker-end="url(#ac)" stroke-linecap="round"/>
+        <text x="50" y="146" text-anchor="middle" class="note">chaleur</text><text x="50" y="181" text-anchor="middle" class="note">air frais</text>
+        <text x="330" y="145" text-anchor="middle" class="note strong">Nuit : la masse restitue</text>
+        <text x="330" y="164" text-anchor="middle" class="note">la ventilation évacue</text>
+        <text x="330" y="180" text-anchor="middle" class="note">la chaleur vers l'extérieur</text>
+      </svg>
+    </figure>
+  </div>
+  <div class="key"><b>Analogie</b>Une baignoire avec un grand volume : elle absorbe un fort débit d'eau sans que le niveau monte vite. Si on ne la vide jamais, elle finit quand même par déborder. La ventilation nocturne, c'est la bonde.</div>
+</section>
+
+<section id="s2">
+  <h2><span class="n">2</span>Déphasage et amortissement</h2>
+  <p class="intro">Toute la notion se lit sur deux courbes. L'exemple correspond à un bâtiment de constante de temps 12 h soumis à une variation sinusoïdale de la température extérieure.</p>
+  <div class="chart" id="c-def"></div>
+  <div class="grid g2 mt">
+    <div class="card"><h3>Amortissement <i>f</i></h3><p class="f"><i>f</i> = <i>A</i><sub>int</sub> / <i>A</i><sub>ext</sub></p><p class="small" style="margin:0">Part de l'amplitude extérieure qui subsiste à l'intérieur. Ici <i>f</i> = 2,4 / 8 ≈ 0,30 : l'intérieur ne voit que 30 % des variations. Plus <i>f</i> est petit, mieux c'est.</p></div>
+    <div class="card"><h3>Déphasage Δ<i>t</i></h3><p class="f">Δ<i>t</i> = <i>t</i><sub>pic int</sub> − <i>t</i><sub>pic ext</sub></p><p class="small" style="margin:0">Retard du pic intérieur sur le pic extérieur. Ici ≈ 4,8 h : un pic à 15 h dehors arrive vers 19 h 50 dedans, au moment où l'on peut commencer à ouvrir les fenêtres.</p></div>
+  </div>
+  <div class="key"><b>Le point qu'on oublie</b>Les deux courbes ont la même moyenne. Sans apports ni ventilation, l'inertie déplace et aplatit les pics, mais ne change pas la température moyenne de la journée.</div>
+</section>
+
+<section id="s3">
+  <h2><span class="n">3</span>Les matériaux : trois grandeurs à ne pas confondre</h2>
+  <p class="intro">Elles se calculent toutes à partir de la masse volumique ρ, de la capacité thermique massique <i>c</i> et de la conductivité λ, mais répondent à trois questions différentes.</p>
+  <div class="grid g3 mt">
+    <div class="card"><h3>Combien peut-il stocker ?</h3><p class="f">ρ<i>c</i></p><p class="small" style="margin:0"><b>Capacité thermique volumique</b>, en kJ/(m³·K). L'énergie stockée par m³ pour 1 K d'élévation.</p></div>
+    <div class="card"><h3>La chaleur le traverse-t-elle vite ?</h3><p class="f"><i>a</i> = λ / (ρ<i>c</i>)</p><p class="small" style="margin:0"><b>Diffusivité</b>, en m²/s. Plus elle est <b>faible</b>, plus l'onde thermique est lente et atténuée : c'est elle qui fixe le déphasage.</p></div>
+    <div class="card"><h3>Absorbe-t-il vite en surface ?</h3><p class="f"><i>b</i> = √(λρ<i>c</i>)</p><p class="small" style="margin:0"><b>Effusivité</b>, en J/(m²·K·s<sup>½</sup>). Plus elle est <b>élevée</b>, plus la paroi capte vite la chaleur de la pièce.</p></div>
+  </div>
+  <div class="chart">
+    <p class="chart-title">Propriétés typiques, classées par capacité volumique</p>
+    <p class="chart-sub">Chaque barre est à l'échelle de sa propre colonne. Ordres de grandeur : les fiches produits font foi.</p>
+    <div class="tw"><table class="mat" id="t-mat"></table></div>
+  </div>
+  <div class="key"><b>À lire dans ce tableau</b>Le béton stocke beaucoup et absorbe vite, mais laisse aussi passer l'onde assez vite. La fibre de bois stocke peu au m³, mais sa diffusivité très faible freine fortement l'onde. La laine minérale légère a une diffusivité élevée : elle isole bien, mais déphase peu.</div>
+</section>
+
+<section id="s4">
+  <h2><span class="n">4</span>Deux inerties, deux rôles</h2>
+  <div class="grid g2 mt">
+    <div class="card"><h3>Inertie par absorption</h3><p class="small" style="margin:0">La masse <b>côté intérieur</b> absorbe les apports de la pièce (soleil, occupants, appareils). Critères : masse accessible, effusivité élevée. Pour le cycle de 24 h, les dix premiers centimètres de béton environ font l'essentiel du travail.</p></div>
+    <div class="card"><h3>Inertie par transmission</h3><p class="small" style="margin:0">L'onde de chaleur venue de <b>l'extérieur</b> traverse la paroi avec retard et affaiblie. Critères : diffusivité faible, résistance thermique élevée. Elle compte surtout sous une toiture ou derrière une paroi très ensoleillée.</p></div>
+  </div>
+  <p class="mt" style="font-weight:600;margin-bottom:0">C'est la position de la masse qui décide : trois parois, trois comportements</p>
+  <div class="grid g3 mt" id="walls"></div>
+  <div class="key"><b>Règle pratique</b>La masse n'agit que si elle « voit » l'air de la pièce. Moquette épaisse, faux plafond ou doublage isolé la déconnectent, même si le béton est toujours là. Dalles, refends et cloisons lourdes comptent autant que les murs extérieurs.</div>
+</section>
+
+<section id="s5">
+  <h2><span class="n">5</span>Calculateur : l'onde à travers une paroi</h2>
+  <p class="intro">Modèle d'une onde thermique journalière dans un milieu homogène semi-infini, avec une amplitude imposée de 15 °C sur la face extérieure. Il donne des ordres de grandeur : il ignore les échanges de surface et les multicouches, que traite la norme ISO 13786.</p>
+  <div class="ctrl">
+    <label>Matériau <select id="m-sel"></select></label>
+    <label><span>Épaisseur : <output id="m-eo"></output></span><input type="range" id="m-e" min="5" max="40" step="1" value="20"></label>
+  </div>
+  <div class="grid g4 mt" id="m-tiles"></div>
+  <div class="chart" id="c-wall"></div>
+  <div class="chart">
+    <p class="chart-title">Tous les matériaux à cette épaisseur</p>
+    <p class="chart-sub" id="m-sub"></p>
+    <div class="tw"><table id="t-wall"></table></div>
+  </div>
+  <div class="key"><b>Le piège du déphasage seul</b>Regardez la dernière colonne : un béton et une laine minérale de 20 cm ont un déphasage comparable, mais le béton transmet bien plus de flux. Il faut toujours lire le déphasage avec la résistance thermique. Un déphasage très long sur une paroi qui laisse passer beaucoup de flux ne protège pas.</div>
+</section>
+
+<section id="s6">
+  <h2><span class="n">6</span>Simulateur : la maison sur 24 h</h2>
+  <p class="intro">Une maison de 100 m² et 250 m³, modélisée par une seule capacité et une seule résistance. La courbe de référence garde toujours les mêmes déperditions avec une inertie très légère.</p>
+  <div class="ctrl">
+    <label>Classe d'inertie
+      <select id="s-class">
+        <option value="80">Très légère (80 kJ/m²K)</option>
+        <option value="110">Légère (110 kJ/m²K)</option>
+        <option value="165">Moyenne (165 kJ/m²K)</option>
+        <option value="260">Lourde (260 kJ/m²K)</option>
+        <option value="370" selected>Très lourde (370 kJ/m²K)</option>
+      </select>
+    </label>
+    <label><span>Déperditions <i>H</i> : <output id="s-ho"></output></span><input type="range" id="s-h" min="50" max="400" step="10" value="100"></label>
+    <label class="chk"><input type="checkbox" id="s-gain"> Apports solaires et internes</label>
+    <label class="chk"><input type="checkbox" id="s-vent"> Ventilation nocturne</label>
+  </div>
+  <div class="grid g4 mt" id="s-tiles"></div>
+  <div class="chart" id="c-sim"></div>
+  <div class="card mt">
+    <h3>Trois expériences à faire</h3>
+    <ol class="steps" style="margin-bottom:0">
+      <li><b>Sans apports ni ventilation.</b> Passez de « Très légère » à « Très lourde » : le pic baisse, mais la moyenne reste à 26 °C. Le retard plafonne vers 6 h, limite mathématique de ce modèle à une seule capacité.</li>
+      <li><b>Cochez les apports.</b> La moyenne monte avec toutes les classes, car la chaleur reçue doit bien sortir. Avec <i>H</i> = 100 W/K, l'écart jour/nuit reste de 0,9 °C en classe très lourde, contre 4,1 °C en très légère : c'est là que l'inertie sert le plus.</li>
+      <li><b>Ajoutez la ventilation nocturne.</b> Cette fois la moyenne baisse : de 30,0 à 24,3 °C en classe très lourde. La masse stocke la fraîcheur de la nuit et la restitue le jour : le couple inertie + surventilation est le vrai levier du confort d'été.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="s7">
+  <h2><span class="n">7</span>Atout ou handicap : tout dépend de l'usage</h2>
+  <p class="intro">L'inertie n'est pas bonne en soi. Elle vaut ce que valent le climat, l'occupation et la conduite du bâtiment.</p>
+  <div class="card mt tw">
+    <table>
+      <thead><tr><th>Situation</th><th>Verdict</th><th>Pourquoi</th></tr></thead>
+      <tbody>
+        <tr><td>Été avec nuits fraîches (grand écart jour/nuit)</td><td><b>Très utile</b></td><td>La masse se décharge la nuit grâce à la surventilation et garde la fraîcheur le jour.</td></tr>
+        <tr><td>Hiver ensoleillé, baies au sud</td><td><b>Utile</b></td><td>Les apports gratuits sont stockés au lieu de surchauffer la pièce, puis restitués le soir.</td></tr>
+        <tr><td>Logement occupé en continu</td><td><b>Utile</b></td><td>Température stable, moins de sensations de paroi froide ou chaude, pics de chauffage lissés.</td></tr>
+        <tr><td>Canicule longue avec nuits chaudes</td><td><b>Utile, puis limité</b></td><td>La masse retarde la surchauffe de quelques jours, mais finit par se charger si elle ne peut plus se vider.</td></tr>
+        <tr><td>Climat chaud et humide, peu d'écart jour/nuit</td><td><b>Peu utile</b></td><td>Il n'y a pas de fraîcheur nocturne à stocker. Protection solaire et ventilation passent devant.</td></tr>
+        <tr><td>Occupation intermittente (résidence secondaire, salle de réunion)</td><td><b>Pénalisant</b></td><td>Une masse froide met du temps à se réchauffer : relance lente et énergie absorbée par les parois plutôt que par l'air.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="key"><b>En France</b>La RE2020 évalue le confort d'été avec un indicateur en degrés-heures (DH), sur lequel l'inertie joue directement, aux côtés des protections solaires et de la surventilation.</div>
+</section>
+
+<section id="s8">
+  <h2><span class="n">8</span>Idées reçues</h2>
+  <div class="grid g2 mt">
+    <div class="card myth"><p><b>« Un mur épais en béton isole bien. »</b>Faux. Le béton conduit environ cinquante fois mieux qu'une laine minérale. Il stocke, il n'isole pas.</p></div>
+    <div class="card myth"><p><b>« L'inertie rafraîchit le bâtiment. »</b>Faux. Elle décale et lisse. Il faut une source de fraîcheur, généralement l'air de la nuit, pour faire baisser la moyenne.</p></div>
+    <div class="card myth"><p><b>« Plus de masse, c'est toujours mieux. »</b>Faux. Au-delà de la profondeur utile, le gain sur le cycle journalier devient faible, et l'inertie pénalise les usages intermittents.</p></div>
+    <div class="card myth"><p><b>« Une maison à ossature bois n'a aucune inertie. »</b>Excessif. Une chape, des cloisons lourdes ou un isolant dense peuvent en apporter, par absorption comme par transmission.</p></div>
+    <div class="card myth"><p><b>« Un béton isolé par l'intérieur garde son inertie. »</b>Pas pour la pièce : le doublage le coupe de l'air intérieur. L'isolation par l'extérieur laisse la masse disponible.</p></div>
+    <div class="card myth"><p><b>« 12 h de déphasage garantissent une maison fraîche. »</b>Non. L'essentiel des surchauffes vient souvent des vitrages et des apports internes, que le déphasage d'une paroi ne traite pas.</p></div>
+  </div>
+</section>
+
+<section id="s9">
+  <h2><span class="n">9</span>Fiche de formules</h2>
+  <div class="grid g2 mt">
+    <div class="card"><h3>Constante de temps du bâtiment</h3><p class="f">τ = <i>C</i> / <i>H</i></p><p class="small" style="margin:0"><i>C</i> capacité (J/K), <i>H</i> déperditions (W/K), τ en secondes. Mieux isoler augmente τ autant qu'ajouter de la masse.</p></div>
+    <div class="card"><h3>Modèle à une capacité (1R1C)</h3><p class="f"><i>f</i> = 1 / √(1 + (ωτ)²) &nbsp; Δ<i>t</i> = arctan(ωτ) / ω</p><p class="small" style="margin:0">ω = 2π/<i>P</i> ; <i>P</i> = 24 h, donc ω ≈ 0,262 h⁻¹. Δ<i>t</i> ne dépasse jamais <i>P</i>/4 = 6 h dans ce modèle.</p></div>
+    <div class="card"><h3>Profondeur de pénétration</h3><p class="f">δ = √(<i>a P</i> / π)</p><p class="small" style="margin:0">Profondeur où l'amplitude tombe à 37 %. Sur 24 h : environ 15 cm pour le béton, 7 cm pour le bois.</p></div>
+    <div class="card"><h3>Onde dans une paroi épaisse</h3><p class="f"><i>f</i> = e<sup>−<i>x</i>/δ</sup> &nbsp; Δ<i>t</i> = (<i>x</i>/δ) · <i>P</i>/(2π)</p><p class="small" style="margin:0"><i>x</i> épaisseur traversée. Ici le déphasage n'est plus plafonné, car la paroi agit comme une infinité de petites capacités.</p></div>
+    <div class="card"><h3>Ventilation</h3><p class="f"><i>H</i><sub>v</sub> = 0,34 · <i>n</i> · <i>V</i></p><p class="small" style="margin:0"><i>H</i><sub>v</sub> en W/K, <i>n</i> en vol/h, <i>V</i> en m³. 250 m³ à 4 vol/h donnent 340 W/K.</p></div>
+    <div class="card"><h3>Capacité forfaitaire (ISO 13790)</h3><p class="f"><i>C</i> = <i>C</i><sub>m</sub> · <i>S</i></p><p class="small" style="margin:0"><i>C</i><sub>m</sub> de 80 (très légère) à 370 kJ/(m²·K) (très lourde), par m² de surface de plancher <i>S</i>.</p></div>
+  </div>
+</section>
+
+<section id="s10">
+  <h2><span class="n">10</span>S'entraîner</h2>
+  <div class="card mt">
+    <h3>Exercice résolu</h3>
+    <p style="margin:0">Maison de 100 m², classe d'inertie moyenne (165 kJ/m²K), <i>H</i> = 100 W/K. Dehors, la température oscille de ±8 °C autour de sa moyenne sur 24 h. Quelle oscillation à l'intérieur, et avec quel retard, sans apports ni ventilation ? Que devient-elle si <i>H</i> = 300 W/K ?</p>
+    <details class="sol"><summary>Voir la solution</summary>
+      <ol class="steps">
+        <li><b>Capacité :</b> <i>C</i> = 165 × 100 = 16 500 kJ/K = 16,5 MJ/K.</li>
+        <li><b>Constante de temps :</b> τ = 16,5·10⁶ / 100 = 165 000 s ≈ 45,8 h.</li>
+        <li><b>Pulsation réduite :</b> ωτ = 0,262 × 45,8 ≈ 12,0.</li>
+        <li><b>Amortissement :</b> <i>f</i> = 1 / √(1 + 12,0²) ≈ 0,083, soit ±0,66 °C à l'intérieur.</li>
+        <li><b>Déphasage :</b> Δ<i>t</i> = arctan(12,0) / 0,262 ≈ 1,488 / 0,262 ≈ 5,7 h.</li>
+        <li><b>Avec <i>H</i> = 300 W/K :</b> τ ≈ 15,3 h, ωτ ≈ 4,0, <i>f</i> ≈ 0,24, soit ±1,9 °C : à masse égale, une enveloppe moins performante amortit presque trois fois moins.</li>
+      </ol>
+    </details>
+  </div>
+  <div id="quiz"></div>
+  <p id="score" aria-live="polite"></p>
+</section>
+
+<footer>
+  <p><b>Hypothèses.</b> Les simulations sont des modèles pédagogiques : sinusoïde extérieure de 18 à 34 °C, une seule capacité, apports de 150 W en continu plus un pic solaire de 1 200 W entre 8 h et 18 h, ventilation nocturne de 4 vol/h entre 22 h et 7 h lorsque l'extérieur est plus frais. Ils ne remplacent ni une simulation thermique dynamique ni un calcul réglementaire.</p>
+  <p style="margin:0"><b>Références de calcul.</b> Classes de capacité : ISO 13790. Caractéristiques dynamiques des parois : ISO 13786. Les propriétés des matériaux sont des valeurs typiques qui varient selon les produits.</p>
+</footer>
+</div>
+
+<script>
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const num = (v, d = 1) => v.toFixed(d).replace(".", ",").replace("-", "−");
+const hh = t => { const m = Math.round(t * 60) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + " h " + String(m % 60).padStart(2, "0"); };
+function s(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function h(tag, cls, parent, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+/* ---------- Line chart ---------- */
+function createChart(host, cfg) {
+  if (cfg.title) h("p", "chart-title", host, cfg.title);
+  const sub = h("p", "chart-sub", host, cfg.sub || "");
+  const legend = h("div", "legend", host);
+  const plot = h("div", "plot", host);
+  plot.tabIndex = 0;
+  plot.setAttribute("role", "img");
+  plot.setAttribute("aria-label", cfg.aria);
+  const tip = h("div", "tip", plot);
+  const det = h("details", "tv", host);
+  h("summary", "", det, "Voir les valeurs en tableau");
+  const tw = h("div", "tw", det);
+  let data = null, svg = null, cross = null, dots = [], scale = null, idx = null;
+
+  function draw() {
+    if (!data) return;
+    if (svg) svg.remove();
+    const W = Math.max(plot.clientWidth || 700, 540), H = cfg.height || 320;
+    const m = { t: 30, r: 22, b: 34, l: 42 };
+    const xs = data.x, xMin = cfg.xMin ?? xs[0], xMax = cfg.xMax ?? xs[xs.length - 1];
+    const X = v => m.l + (v - xMin) / (xMax - xMin) * (W - m.l - m.r);
+    const Y = v => H - m.b - (v - data.yMin) / (data.yMax - data.yMin) * (H - m.t - m.b);
+    scale = { X, Y };
+    svg = s("svg", { viewBox: `0 0 ${W} ${H}`, "aria-hidden": "true" });
+    plot.insertBefore(svg, tip);
+    (cfg.bands || []).forEach(([a, b]) => s("rect", { x: X(a), y: m.t, width: X(b) - X(a), height: H - m.t - m.b, fill: "var(--band)" }, svg));
+    data.yTicks.forEach(v => {
+      s("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: v === data.yMin ? "var(--axis)" : "var(--grid)", "stroke-width": 1 }, svg);
+      s("text", { x: m.l - 8, y: Y(v) + 4, "text-anchor": "end", class: "tick" }, svg, (cfg.yFmt || String)(v));
+    });
+    s("text", { x: m.l - 8, y: 14, "text-anchor": "end", class: "tick" }, svg, cfg.yUnit || "");
+    cfg.xTicks.forEach(v => s("text", { x: X(v), y: H - m.b + 18, "text-anchor": "middle", class: "tick" }, svg, (cfg.xFmt || String)(v)));
+    if (cfg.annotate) cfg.annotate({ svg, X, Y, W, H, m, data });
+    data.series.forEach(se => {
+      const d = se.values.map((v, i) => (i ? "L" : "M") + X(xs[i]).toFixed(1) + " " + Y(v).toFixed(1)).join("");
+      s("path", { d, fill: "none", stroke: se.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    });
+    /* selective peak labels, skipping any that would collide */
+    const placed = [];
+    (data.labels || []).forEach(l => {
+      s("circle", { cx: X(l.x), cy: Y(l.y), r: 4, fill: l.color, stroke: "var(--surface)", "stroke-width": 2 }, svg);
+      let lx = X(l.x), ly = Y(l.y) - 10;
+      if (lx > W - m.r - 30) lx = W - m.r - 30;
+      if (lx < m.l + 30) lx = m.l + 30;
+      if (placed.some(p => Math.abs(p[0] - lx) < 52 && Math.abs(p[1] - ly) < 16)) return;
+      placed.push([lx, ly]);
+      s("text", { x: lx, y: ly, "text-anchor": "middle", class: "note strong" }, svg, l.text);
+    });
+    cross = s("line", { y1: m.t, y2: H - m.b, stroke: "var(--axis)", "stroke-width": 1, visibility: "hidden" }, svg);
+    dots = data.series.map(se => s("circle", { r: 4, fill: se.color, stroke: "var(--surface)", "stroke-width": 2, visibility: "hidden" }, svg));
+    if (idx != null) show(idx);
+  }
+  function show(i) {
+    idx = i;
+    const xv = data.x[i], px = scale.X(xv), vb = svg.viewBox.baseVal;
+    cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("visibility", "visible");
+    dots.forEach((d, k) => { d.setAttribute("cx", px); d.setAttribute("cy", scale.Y(data.series[k].values[i])); d.setAttribute("visibility", "visible"); });
+    tip.textContent = "";
+    h("div", "h", tip, (cfg.tipX || cfg.xFmt || String)(xv));
+    data.series.forEach(se => {
+      const r = h("div", "r", tip);
+      const key = h("i", "", r); key.style.background = se.color;
+      h("strong", "", r, (cfg.tipY || num)(se.values[i]));
+      h("span", "", r, se.name);
+    });
+    tip.style.display = "block";
+    const ratio = plot.clientWidth / vb.width, tw = tip.offsetWidth, cx = px * ratio;
+    tip.style.left = (cx + 14 + tw > plot.clientWidth ? cx - tw - 14 : cx + 14) + "px";
+    tip.style.top = "8px";
+  }
+  function hide() {
+    idx = null;
+    tip.style.display = "none";
+    if (cross) cross.setAttribute("visibility", "hidden");
+    dots.forEach(d => d.setAttribute("visibility", "hidden"));
+  }
+  function nearest(clientX) {
+    const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+    const vx = (clientX - r.left) * vb.width / r.width;
+    let best = 0, bd = Infinity;
+    data.x.forEach((x, i) => { const d = Math.abs(scale.X(x) - vx); if (d < bd) { bd = d; best = i; } });
+    return best;
+  }
+  plot.addEventListener("pointermove", e => { if (data) show(nearest(e.clientX)); });
+  plot.addEventListener("pointerleave", hide);
+  plot.addEventListener("blur", hide);
+  plot.addEventListener("focus", () => { if (data && plot.matches(":focus-visible")) show(Math.floor(data.x.length / 2)); });
+  plot.addEventListener("keydown", e => {
+    if (!data || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+    e.preventDefault();
+    const step = e.key === "ArrowRight" ? 1 : -1;
+    show(Math.min(data.x.length - 1, Math.max(0, (idx ?? 0) + step)));
+  });
+  new ResizeObserver(() => { const w = Math.round(plot.clientWidth); if (w !== plot._w) { plot._w = w; draw(); } }).observe(plot);
+
+  return {
+    setSub(t) { sub.textContent = t; },
+    update(d) {
+      data = d;
+      legend.textContent = "";
+      d.series.forEach(se => {
+        const it = h("span", "", legend);
+        const k = h("i", "", it); k.style.background = se.color;
+        it.appendChild(document.createTextNode(se.name));
+      });
+      tw.textContent = "";
+      const t = h("table", "", tw), hr = h("tr", "", h("thead", "", t));
+      h("th", "", hr, cfg.xName);
+      d.series.forEach(se => h("th", "num", hr, se.name));
+      const b = h("tbody", "", t);
+      d.x.forEach((x, i) => {
+        if (i % (cfg.tableStep || 1)) return;
+        const r = h("tr", "", b);
+        h("td", "", r, (cfg.tipX || cfg.xFmt || String)(x));
+        d.series.forEach(se => h("td", "num", r, (cfg.tipY || num)(se.values[i])));
+      });
+      draw();
+    }
+  };
+}
+const range = (a, b, st) => { const r = []; for (let v = a; v <= b + 1e-9; v += st) r.push(+v.toFixed(6)); return r; };
+const degree = v => num(v, 1) + " °C";
+const hourTick = v => v + " h";
+
+/* ---------- §2 definition chart ---------- */
+(function () {
+  const w = 2 * Math.PI / 24, tau = 12, f = 1 / Math.hypot(1, w * tau), lag = Math.atan(w * tau) / w;
+  const x = range(0, 24, .5);
+  const ext = x.map(t => 25 + 8 * Math.cos(w * (t - 15)));
+  const int = x.map(t => 25 + 8 * f * Math.cos(w * (t - 15 - lag)));
+  const c = createChart($("c-def"), {
+    title: "Températures extérieure et intérieure sur 24 h",
+    sub: "Modèle à une capacité, τ = 12 h. Survolez le graphique pour lire les valeurs.",
+    aria: "Courbes sur 24 heures. L'extérieur varie de 17 à 33 °C avec un pic à 15 h. L'intérieur varie de 22,6 à 27,4 °C avec un pic vers 19 h 50.",
+    xName: "Heure", xFmt: hourTick, xTicks: range(0, 24, 3), yFmt: String, yUnit: "°C", tipY: degree, tipX: hh, tableStep: 6, height: 350,
+    annotate({ svg, X, Y, W, m }) {
+      const L = (a, b, c2, d, col = "var(--ink-2)") => s("line", { x1: a, y1: b, x2: c2, y2: d, stroke: col, "stroke-width": 1 }, svg);
+      L(m.l, Y(25), W - m.r, Y(25), "var(--axis)");
+      s("text", { x: W - m.r, y: Y(25) + 15, "text-anchor": "end", class: "note" }, svg, "Moyenne");
+      /* phase bracket */
+      const p1 = X(15), p2 = X(15 + lag), py = Y(35);
+      L(p1, Y(33), p1, py); L(p2, Y(25 + 8 * f), p2, py); L(p1, py, p2, py);
+      s("text", { x: (p1 + p2) / 2, y: py - 6, "text-anchor": "middle", class: "note strong" }, svg, "Déphasage ≈ 4,8 h");
+      /* amplitudes */
+      L(p1, Y(25), p1, Y(33));
+      s("text", { x: p1 - 7, y: Y(29), "text-anchor": "end", class: "note strong" }, svg, "A ext = 8 °C");
+      L(p2, Y(25), p2, Y(21.8));
+      s("text", { x: p2, y: Y(21.8) + 15, "text-anchor": "middle", class: "note strong" }, svg, "A int = 2,4 °C");
+    }
+  });
+  c.update({
+    x, yMin: 15, yMax: 36, yTicks: [15, 20, 25, 30, 35],
+    series: [
+      { name: "Extérieur", color: "var(--s1)", values: ext },
+      { name: "Intérieur", color: "var(--s2)", values: int }
+    ],
+    labels: [
+      { x: 15, y: 33, color: "var(--s1)", text: "" },
+      { x: 15 + lag, y: 25 + 8 * f, color: "var(--s2)", text: "" }
+    ]
+  });
+})();
+
+/* ---------- §3 materials ---------- */
+const MATS = [
+  { n: "Eau (référence)", r: 1000, l: .60, c: 4180, ref: true },
+  { n: "Béton plein", r: 2300, l: 1.8, c: 1000 },
+  { n: "Pierre calcaire", r: 2200, l: 1.7, c: 900 },
+  { n: "Brique pleine", r: 1800, l: .80, c: 1000 },
+  { n: "Terre crue", r: 1800, l: .90, c: 1000 },
+  { n: "Plaque de plâtre", r: 850, l: .25, c: 1000 },
+  { n: "Bois résineux", r: 500, l: .13, c: 1600 },
+  { n: "Fibre de bois dense", r: 160, l: .040, c: 2100 },
+  { n: "Laine minérale", r: 30, l: .035, c: 1030 }
+];
+MATS.forEach(m => {
+  m.rc = m.r * m.c;                 /* J/(m3.K) */
+  m.a = m.l / m.rc;                 /* m2/s */
+  m.b = Math.sqrt(m.l * m.rc);      /* effusivity */
+  m.delta = Math.sqrt(m.a * 86400 / Math.PI); /* m */
+});
+(function () {
+  const t = $("t-mat");
+  const hd = h("tr", "", h("thead", "", t));
+  ["Matériau", "ρ kg/m³", "λ W/(m·K)", "c J/(kg·K)"].forEach((x, i) => h("th", i ? "num" : "", hd, x));
+  ["Stockage ρc kJ/(m³·K)", "Diffusivité a 10⁻⁷ m²/s", "Effusivité b"].forEach(x => h("th", "", hd, x));
+  const b = h("tbody", "", t);
+  const mx = k => Math.max(...MATS.map(m => m[k]));
+  const mR = mx("rc"), mA = mx("a"), mB = mx("b");
+  const bar = (tr, txt, ratio) => {
+    const td = h("td", "barcell", tr);
+    h("span", "v", td, txt);
+    const sp = h("span", "bar", td);
+    sp.style.width = Math.max(ratio * 100, 1) + "%";
+  };
+  MATS.slice().sort((x, y) => y.rc - x.rc).forEach(m => {
+    const tr = h("tr", "", b);
+    h("td", "", tr, m.n);
+    h("td", "num", tr, String(m.r));
+    h("td", "num", tr, num(m.l, m.l < .1 ? 3 : 2));
+    h("td", "num", tr, String(m.c));
+    bar(tr, Math.round(m.rc / 1000).toString(), m.rc / mR);
+    bar(tr, num(m.a * 1e7, 1), m.a / mA);
+    bar(tr, Math.round(m.b).toString(), m.b / mB);
+  });
+})();
+
+/* ---------- §4 wall sections ---------- */
+(function () {
+  const walls = [
+    { t: "Béton + isolation par l'extérieur", tag: "Absorption forte", layers: [["isolant", 62, "ins"], ["béton", 98, "mass"]], d: "La masse est du côté de la pièce, à l'abri des variations extérieures. C'est la configuration la plus favorable." },
+    { t: "Béton + isolation par l'intérieur", tag: "Absorption faible", layers: [["béton", 98, "mass"], ["isolant", 62, "ins"], ["plâtre", 14, "wood"]], d: "Le doublage coupe le béton de la pièce. Seule la plaque de plâtre échange avec l'air. Dalles et refends peuvent compenser en partie." },
+    { t: "Ossature bois + isolant dense", tag: "Absorption faible à moyenne · transmission bonne", layers: [["bardage", 14, "wood"], ["fibre de bois", 112, "ins"], ["OSB", 14, "wood"], ["plâtre", 14, "wood"]], d: "Peu de masse accessible, mais l'isolant dense freine l'onde extérieure. Une chape ou des cloisons lourdes renforcent l'absorption." }
+  ];
+  const host = $("walls");
+  walls.forEach(w => {
+    const c = h("div", "card wall", host);
+    const v = s("svg", { viewBox: "0 0 240 150", role: "img", "aria-label": w.t + " : " + w.tag }, c);
+    s("text", { x: 18, y: 16, "text-anchor": "middle", class: "tick" }, v, "ext.");
+    s("text", { x: 222, y: 16, "text-anchor": "middle", class: "tick" }, v, "int.");
+    let x = 34;
+    w.layers.forEach(l => {
+      s("rect", { x, y: 24, width: l[1] - 1, height: 118, fill: `var(--${l[2]})` }, v);
+      if (l[1] >= 40) s("text", { x: x + l[1] / 2, y: 87, "text-anchor": "middle", fill: `var(--${l[2]}-ink)`, "font-size": 13 }, v, l[0]);
+      else s("text", { transform: `translate(${x + l[1] / 2 + 4} 83) rotate(-90)`, "text-anchor": "middle", fill: `var(--${l[2]}-ink)`, "font-size": 11 }, v, l[0]);
+      x += l[1];
+    });
+    h("h3", "", c, w.t);
+    h("span", "tag", c, w.tag);
+    h("p", "small", c, w.d).style.margin = "0";
+  });
+})();
+
+/* ---------- §5 wall calculator ---------- */
+(function () {
+  const wallMats = MATS.filter(m => !m.ref);
+  const sel = $("m-sel");
+  wallMats.forEach((m, i) => { const o = h("option", "", sel, m.n); o.value = i; });
+  const A0 = 15;
+  const fmtF = v => v < .01 ? "< 0,01" : num(v, 2);
+  const fmtQ = v => v < .1 ? "< 0,1" : v < 10 ? num(v, 1) : String(Math.round(v));
+  const calc = (m, x) => {
+    const ratio = x / m.delta, f = Math.exp(-ratio);
+    return { f, dt: ratio * 24 / (2 * Math.PI), q: A0 * Math.SQRT2 * m.l / m.delta * f };
+  };
+  const chart = createChart($("c-wall"), {
+    title: "Température des deux faces de la paroi",
+    aria: "Courbes sur 24 heures de la température sur la face extérieure et la face intérieure de la paroi choisie.",
+    xName: "Heure", xFmt: hourTick, xTicks: range(0, 24, 3), yUnit: "°C", tipY: degree, tipX: hh, tableStep: 6, height: 290
+  });
+  const tiles = $("m-tiles");
+  function tile(host, label, value, sub) {
+    const t = h("div", "tile", host);
+    h("div", "l", t, label); h("div", "v", t, value); if (sub) h("div", "s", t, sub);
+  }
+  function run() {
+    const m = wallMats[+sel.value], e = +$("m-e").value, x = e / 100, r = calc(m, x);
+    $("m-eo").textContent = e + " cm";
+    tiles.textContent = "";
+    tile(tiles, "Déphasage", num(r.dt, 1) + " h", "retard du pic");
+    tile(tiles, "Amortissement f", fmtF(r.f), (r.f < .01 ? "moins de 1" : Math.round(r.f * 100)) + " % de l'amplitude passe");
+    tile(tiles, "Profondeur δ", num(m.delta * 100, 1) + " cm", "amplitude réduite à 37 %");
+    tile(tiles, "Flux oscillant transmis", fmtQ(r.q) + " W/m²", "amplitude en sortie");
+    const w = 2 * Math.PI / 24, t = range(0, 24, .5);
+    const ext = t.map(v => 30 + A0 * Math.cos(w * (v - 15)));
+    const int = t.map(v => 30 + A0 * r.f * Math.cos(w * (v - 15 - r.dt)));
+    const peak = (15 + r.dt) % 24;
+    chart.setSub(m.n + ", " + e + " cm. Pic de la face intérieure vers " + hh(peak) + ".");
+    chart.update({
+      x: t, yMin: 10, yMax: 50, yTicks: [10, 20, 30, 40, 50],
+      series: [
+        { name: "Face extérieure", color: "var(--s1)", values: ext },
+        { name: "Face intérieure", color: "var(--s2)", values: int }
+      ],
+      labels: [
+        { x: 15, y: 45, color: "var(--s1)", text: "45 °C" },
+        { x: peak, y: 30 + A0 * r.f, color: "var(--s2)", text: num(30 + A0 * r.f, 1) + " °C" }
+      ]
+    });
+    $("m-sub").textContent = "Épaisseur " + e + " cm, résultats du même modèle.";
+    const tb = $("t-wall");
+    tb.textContent = "";
+    const hr = h("tr", "", h("thead", "", tb));
+    h("th", "", hr, "Matériau");
+    ["Déphasage (h)", "f", "δ (cm)", "Flux (W/m²)"].forEach(c => h("th", "num", hr, c));
+    const body = h("tbody", "", tb);
+    wallMats.forEach(o => {
+      const c = calc(o, x), tr = h("tr", o === m ? "sel" : "", body);
+      h("td", "", tr, o.n);
+      h("td", "num", tr, num(c.dt, 1));
+      h("td", "num", tr, fmtF(c.f));
+      h("td", "num", tr, num(o.delta * 100, 1));
+      h("td", "num", tr, fmtQ(c.q));
+    });
+  }
+  sel.addEventListener("change", run);
+  $("m-e").addEventListener("input", run);
+  run();
+})();
+
+/* ---------- §6 building simulator ---------- */
+(function () {
+  const S = 100, V = 250, Hv = .34 * 4 * V;
+  const Te = t => 26 + 8 * Math.cos(2 * Math.PI / 24 * (t - 15));
+  const gainsAt = t => 150 + (t >= 8 && t <= 18 ? 1200 * Math.sin(Math.PI * (t - 8) / 10) ** 2 : 0);
+  function simulate(Cm, H, vent, gains) {
+    const C = Cm * S * 1000, dt = 300, N = 288, days = 60;
+    let T = 26;
+    const out = [];
+    for (let d = 0; d < days; d++) for (let i = 0; i < N; i++) {
+      const t = (i + 1) * dt / 3600, e = Te(t), night = t >= 22 || t < 7;
+      const Hn = H + (vent && night && e < T ? Hv : 0);
+      const P = gains ? gainsAt(t) : 0;
+      T = (T + dt / C * (Hn * e + P)) / (1 + dt * Hn / C);
+      if (d === days - 1 && (i + 1) % 3 === 0) out.push({ t: t % 24, T });
+    }
+    out.unshift({ t: 0, T: out[out.length - 1].T });
+    out[out.length - 1].t = 24;
+    return out;
+  }
+  function stats(vs, xs) {
+    const mx = Math.max(...vs), mn = Math.min(...vs);
+    const body = vs.slice(1);
+    return { mx, mn, mean: body.reduce((a, b) => a + b, 0) / body.length, peak: xs[vs.indexOf(mx)] };
+  }
+  const chart = createChart($("c-sim"), {
+    title: "Température sur une journée type (régime établi)",
+    aria: "Courbes sur 24 heures : température extérieure, intérieure avec inertie très légère et intérieure avec l'inertie choisie.",
+    xName: "Heure", xFmt: hourTick, xTicks: range(0, 24, 3), yUnit: "°C", tipY: degree, tipX: hh, tableStep: 8, height: 340,
+    bands: [[0, 7], [22, 24]]
+  });
+  const tiles = $("s-tiles");
+  function tile(label, value, sub) {
+    const t = h("div", "tile", tiles);
+    h("div", "l", t, label); h("div", "v", t, value); h("div", "s", t, sub);
+  }
+  function run() {
+    const Cm = +$("s-class").value, H = +$("s-h").value, vent = $("s-vent").checked, gains = $("s-gain").checked;
+    $("s-ho").textContent = H + " W/K" + (H <= 120 ? " (récente performante)" : H >= 280 ? " (non rénovée)" : "");
+    const a = simulate(Cm, H, vent, gains), b = simulate(80, H, vent, gains);
+    const x = a.map(p => p.t), ext = x.map(Te), vi = a.map(p => p.T), vr = b.map(p => p.T);
+    const si = stats(vi, x), sr = stats(vr, x), se = stats(ext, x);
+    const lag = st => { const l = (st.peak - se.peak + 24) % 24; return num(l, 1) + " h"; };
+    const tauH = Cm * S * 1000 / H / 3600;
+    tiles.textContent = "";
+    tile("Constante de temps", Math.round(tauH) + " h", "τ = C / H, référence " + Math.round(80 * S * 1000 / H / 3600) + " h");
+    tile("Pic intérieur", num(si.mx, 1) + " °C", "réf. " + num(sr.mx, 1) + " °C · ext. 34 °C");
+    tile("Moyenne intérieure", num(si.mean, 1) + " °C", "réf. " + num(sr.mean, 1) + " °C · ext. 26 °C");
+    tile("Écart jour/nuit intérieur", num(si.mx - si.mn, 1) + " °C", "réf. " + num(sr.mx - sr.mn, 1) + " °C · ext. 16 °C");
+    const allV = [...ext, ...vi, ...vr];
+    const yMin = Math.floor(Math.min(...allV) / 5) * 5, yMax = Math.ceil((Math.max(...allV) + 1.5) / 5) * 5;
+    chart.setSub("Bandes grises : la nuit (22 h – 7 h). Retard du pic intérieur par rapport à l'extérieur : " + lag(si) + " (référence " + lag(sr) + ").");
+    chart.update({
+      x, yMin, yMax, yTicks: range(yMin, yMax, 5),
+      series: [
+        { name: "Extérieur", color: "var(--s1)", values: ext },
+        { name: "Intérieur, très légère (référence)", color: "var(--s2)", values: vr },
+        { name: "Intérieur, inertie choisie", color: "var(--s3)", values: vi }
+      ],
+      labels: [
+        { x: se.peak, y: se.mx, color: "var(--s1)", text: num(se.mx, 0) + " °C" },
+        { x: sr.peak, y: sr.mx, color: "var(--s2)", text: num(sr.mx, 1) + " °C" },
+        { x: si.peak, y: si.mx, color: "var(--s3)", text: num(si.mx, 1) + " °C" }
+      ]
+    });
+  }
+  ["s-class", "s-h", "s-vent", "s-gain"].forEach(id => $(id).addEventListener("input", run));
+  run();
+})();
+
+/* ---------- §10 quiz ---------- */
+(function () {
+  const Q = [
+    { q: "Sans apports ni ventilation, l'extérieur fait 26 °C en moyenne. Quelle est la moyenne intérieure d'un bâtiment à très forte inertie ?", o: ["Nettement moins de 26 °C", "Environ 26 °C", "Nettement plus de 26 °C"], a: 1, e: "L'inertie aplatit et décale les variations, mais à l'équilibre la chaleur entrée sur 24 h est égale à la chaleur sortie : la moyenne ne bouge pas." },
+    { q: "Quelle grandeur fixe avant tout le déphasage à travers une paroi ?", o: ["La capacité massique c", "La diffusivité a", "L'effusivité b"], a: 1, e: "Δt ∝ x/√a. Une faible diffusivité ralentit l'onde. Une fibre de bois peu massive déphase ainsi bien plus qu'un béton de même épaisseur." },
+    { q: "Une pièce reçoit de forts apports solaires. Quel choix améliore le plus son inertie par absorption ?", o: ["Remplacer la laine du mur par de la fibre de bois", "Laisser une dalle béton nue, sans faux plafond", "Doubler l'épaisseur du mur porteur isolé par l'intérieur"], a: 1, e: "L'absorption suppose une masse en contact avec l'air de la pièce. Une dalle nue et effusive est idéale ; un mur doublé reste déconnecté." },
+    { q: "Une résidence secondaire chauffée deux jours par semaine en hiver : quel type de bâtiment s'y prête le mieux ?", o: ["Inertie intérieure faible, bonne isolation", "Inertie intérieure très forte, faible isolation", "Inertie très forte quelle que soit l'isolation"], a: 0, e: "À chaque relance, une grande masse froide doit d'abord être réchauffée : la montée en température est lente et absorbe de l'énergie inutilement." },
+    { q: "Si l'on divise par deux les déperditions H sans changer la masse, la constante de temps :", o: ["est divisée par deux", "ne change pas", "double"], a: 2, e: "τ = C/H. L'isolation renforce donc le comportement inertiel, même sans ajouter un seul kilo." },
+    { q: "Quel est le levier qui permet réellement de faire baisser la moyenne intérieure en été ?", o: ["Ajouter de la masse", "La surventilation nocturne avec des nuits fraîches", "Augmenter le déphasage des parois"], a: 1, e: "Il faut évacuer de la chaleur vers une source plus fraîche. La masse rend cette fraîcheur nocturne utile pendant la journée." }
+  ];
+  const host = $("quiz");
+  let answered = 0, right = 0;
+  Q.forEach((q, i) => {
+    const c = h("div", "card q", host), fs = h("fieldset", "", c);
+    h("legend", "", fs, (i + 1) + ". " + q.q);
+    const fb = h("p", "fb", c);
+    q.o.forEach((o, j) => {
+      const l = h("label", "", fs), r = h("input", "", l);
+      r.type = "radio"; r.name = "q" + i; r.value = j;
+      l.appendChild(document.createTextNode(o));
+      r.addEventListener("change", () => {
+        const ok = j === q.a;
+        fb.style.display = "block";
+        fb.className = "fb " + (ok ? "ok" : "ko");
+        fb.textContent = "";
+        h("b", "", fb, ok ? "✓ Juste. " : "✗ Réponse attendue : " + q.o[q.a] + ". ");
+        fb.appendChild(document.createTextNode(q.e));
+        if (!c.dataset.done) {
+          c.dataset.done = "1"; answered++; if (ok) right++;
+          $("score").textContent = "Score au premier essai : " + right + " / " + answered + (answered === Q.length ? " (quiz terminé)" : "");
+        }
+      });
+    });
+  });
+})();
+
+/* ---------- theme ---------- */
+$("theme").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+});
+</script>
+</body>
+</html>

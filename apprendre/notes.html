@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Sticky notes : l'inertie thermique d'un bâtiment</title>
+<style>
+  @page { size: A4 portrait; margin: 8mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px;
+    background: #e9e6df; color: #26231d;
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  h1 { max-width: 1100px; margin: 0 auto 22px; font-size: 26px; }
+  .board {
+    max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
+  }
+  .note {
+    min-height: 300px; padding: 16px 18px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.2);
+    font-size: 14.5px; line-height: 1.38;
+    break-inside: avoid;
+  }
+  .note:nth-child(3n+1) { transform: rotate(-.6deg); }
+  .note:nth-child(3n+2) { transform: rotate(.4deg); }
+  .note:nth-child(3n)   { transform: rotate(-.2deg); }
+  .jaune { background: #fdf0a0; }
+  .bleu  { background: #c4e4f5; }
+  .vert  { background: #cdeabb; }
+  .rose  { background: #f9cdd8; }
+  .orange{ background: #fbd7ab; }
+  h2 { margin: 0 0 8px; font-size: 17px; line-height: 1.2; }
+  p { margin: 0 0 7px; }
+  ul { margin: 0 0 7px; padding-left: 17px; }
+  li { margin-bottom: 4px; }
+  .f { display: block; margin: 6px 0; font-family: "Cambria Math", Cambria, serif; font-size: 15.5px; }
+  .petit { font-size: 12px; opacity: .8; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 6px; }
+  th, td { padding: 2px 3px; text-align: right; border-bottom: 1px solid rgba(0,0,0,.25); }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 600; }
+  @media print {
+    body { background: none; padding: 0; }
+    h1 { display: none; }
+    .board { max-width: none; gap: 3mm; }
+    .note {
+      transform: none !important; box-shadow: none;
+      height: 67mm; min-height: 0; padding: 3mm 3.5mm;
+      font-size: 9.4pt; line-height: 1.26; overflow: hidden;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    h2 { font-size: 11pt; margin-bottom: 4px; }
+    .f { font-size: 10pt; margin: 3px 0; }
+    table { font-size: 8.6pt; }
+    th, td { padding: 1px 2px; }
+    .petit { font-size: 7.6pt; }
+    p { margin-bottom: 3px; }
+    ul { margin-bottom: 3px; padding-left: 13px; }
+    li { margin-bottom: 2px; }
+  }
+</style>
+</head>
+<body>
+<h1>L'inertie thermique d'un bâtiment</h1>
+<main class="board">
+
+  <section class="note jaune">
+    <h2>1. C'est quoi ?</h2>
+    <p>La capacité d'un bâtiment à <strong>stocker de la chaleur</strong> puis à la <strong>restituer lentement</strong>.</p>
+    <p>Effet : la température intérieure varie moins et plus tard que les sollicitations (soleil, air extérieur, occupants).</p>
+    <p><strong>Image :</strong> une éponge à chaleur. Elle absorbe les pics et rend l'énergie ensuite.</p>
+  </section>
+
+  <section class="note jaune">
+    <h2>2. Ses deux effets</h2>
+    <p><strong>Déphasage</strong> : retard entre le pic de chaleur dehors et son arrivée de l'autre côté de la paroi (en heures).</p>
+    <p><strong>Amortissement</strong> : le pic arrive affaibli (amplitude réduite).</p>
+    <p>Objectif souvent visé en été : un déphasage de <strong>10 à 12 h</strong>, pour que le pic de l'après-midi arrive la nuit, quand on peut ventiler.</p>
+  </section>
+
+  <section class="note rose">
+    <h2>3. Inertie ≠ isolation</h2>
+    <ul>
+      <li><strong>Isolation</strong> : freine le flux de chaleur (résistance R = e/λ).</li>
+      <li><strong>Inertie</strong> : stocke la chaleur et décale les variations.</li>
+    </ul>
+    <p>Le béton a une forte inertie mais isole mal. La laine de verre isole bien mais stocke très peu.</p>
+    <p><strong>Un bon bâtiment a besoin des deux.</strong></p>
+  </section>
+
+  <section class="note bleu">
+    <h2>4. Les trois grandeurs clés</h2>
+    <p><strong>Capacité thermique volumique</strong> : combien on stocke.
+      <span class="f">C = ρ·c (J/m³·K)</span></p>
+    <p><strong>Effusivité</strong> : vitesse d'échange avec la pièce.
+      <span class="f">E = √(λ·ρ·c) (J/m²·K·s<sup>½</sup>)</span></p>
+    <p><strong>Diffusivité</strong> : vitesse de traversée. Faible = lent.
+      <span class="f">a = λ/(ρ·c) (m²/s)</span></p>
+  </section>
+
+  <section class="note bleu">
+    <h2>5. Ordres de grandeur</h2>
+    <table>
+      <tr><th>Matériau</th><th>ρ·c (MJ/m³·K)</th><th>E</th></tr>
+      <tr><td>Béton</td><td>2,1</td><td>≈ 1900</td></tr>
+      <tr><td>Brique pleine</td><td>1,6</td><td>≈ 1200</td></tr>
+      <tr><td>Bois massif</td><td>0,8</td><td>≈ 350</td></tr>
+      <tr><td>Fibre de bois</td><td>0,34</td><td>≈ 120</td></tr>
+      <tr><td>Laine de verre</td><td>0,02</td><td>≈ 30</td></tr>
+    </table>
+    <p class="petit">Valeurs typiques calculées à partir de ρ, c et λ courants ; elles varient selon les produits.</p>
+    <p><strong>Lourd et dense = forte capacité de stockage.</strong></p>
+  </section>
+
+  <section class="note bleu">
+    <h2>6. Déphasage : le calcul simple</h2>
+    <p>Pour un cycle de 24 h (P = 86 400 s), paroi d'épaisseur e :</p>
+    <span class="f">δ = √(a·P/π) &nbsp; Δt ≈ (e/δ)·3,8 h</span>
+    <table>
+      <tr><th>20 cm de…</th><th>Δt</th><th>Pic restant</th></tr>
+      <tr><td>Fibre de bois</td><td>≈ 13 h</td><td>≈ 3 %</td></tr>
+      <tr><td>Béton</td><td>≈ 5 h</td><td>≈ 27 %</td></tr>
+      <tr><td>Laine de verre</td><td>≈ 3 h</td><td>≈ 43 %</td></tr>
+    </table>
+    <p class="petit">Modèle simplifié (mur semi-infini) : ordres de grandeur seulement. Pic restant = e<sup>−e/δ</sup>.</p>
+  </section>
+
+  <section class="note vert">
+    <h2>7. Où placer la masse ?</h2>
+    <p><strong>Côté intérieur</strong>, au contact de l'air de la pièce.</p>
+    <ul>
+      <li><strong>Isolation par l'extérieur</strong> : les murs lourds restent reliés à l'intérieur, et l'inertie reste utile.</li>
+      <li><strong>Isolation par l'intérieur</strong> : l'isolant coupe la pièce de la masse des murs.</li>
+    </ul>
+    <p>Sur un cycle de 24 h, seuls les <strong>10 cm environ</strong> côté pièce travaillent vraiment.</p>
+  </section>
+
+  <section class="note vert">
+    <h2>8. Ne pas cacher la masse</h2>
+    <p>Une dalle lourde perd une partie de son effet si elle est recouverte :</p>
+    <ul>
+      <li>faux plafond ;</li>
+      <li>moquette ou tapis épais ;</li>
+      <li>doublage isolant.</li>
+    </ul>
+    <p><strong>Les leviers efficaces :</strong> plancher et plafond lourds laissés apparents, refends maçonnés, grandes surfaces d'échange.</p>
+  </section>
+
+  <section class="note orange">
+    <h2>9. En été</h2>
+    <p><strong>Le jour :</strong> les parois absorbent la chaleur, et la pièce reste plus fraîche.</p>
+    <p><strong>La nuit :</strong> il faut <strong>évacuer</strong> cette chaleur en ventilant.</p>
+    <p>Sans ventilation nocturne, la masse reste chaude et peut prolonger la surchauffe.</p>
+    <p><strong>Trio gagnant :</strong> protections solaires + inertie + surventilation nocturne.</p>
+  </section>
+
+  <section class="note orange">
+    <h2>10. En hiver</h2>
+    <ul>
+      <li>La masse stocke les <strong>apports solaires</strong> et internes de la journée, puis les restitue le soir.</li>
+      <li>Moins de surchauffe en journée, donc des apports mieux valorisés.</li>
+      <li>Température plus stable, parois moins froides : meilleur confort.</li>
+    </ul>
+    <p><strong>Attention :</strong> la montée en température est plus lente après un arrêt du chauffage.</p>
+  </section>
+
+  <section class="note rose">
+    <h2>11. Quand ça aide moins</h2>
+    <ul>
+      <li><strong>Occupation intermittente</strong> (résidence secondaire, salle de réunion) : il faut une montée en température rapide.</li>
+      <li><strong>Climat chaud et humide</strong> avec faible écart jour/nuit : difficile de décharger la masse la nuit.</li>
+      <li><strong>Grandes baies sans protection solaire</strong> : les apports dépassent ce que la masse peut absorber.</li>
+    </ul>
+  </section>
+
+  <section class="note jaune">
+    <h2>12. À retenir</h2>
+    <ul>
+      <li>Inertie = <strong>stocker et décaler</strong>, pas isoler.</li>
+      <li>Masse <strong>à l'intérieur</strong>, isolant <strong>à l'extérieur</strong>.</li>
+      <li>La masse doit rester <strong>apparente</strong>.</li>
+      <li>Parois : stockage (ρ·c), échange (E), retard (a).</li>
+      <li>En été, <strong>la nuit décharge</strong> ce que le jour a chargé.</li>
+    </ul>
+  </section>
+
+</main>
+</body>
+</html>

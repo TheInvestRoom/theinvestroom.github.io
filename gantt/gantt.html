@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning – Maison Dupont, rénovation complète</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --weekend: rgba(11,11,11,0.035);
+    --off: rgba(11,11,11,0.07);
+    --crit: #d03b3b;
+    --late-bg: rgba(250,178,25,0.16);
+    --late: #b07400;
+    --late-badge: #fab219;
+    --link: #a9a79e;
+    --today: #0b0b0b;
+    --lot-1: #2a78d6; --lot-2: #eb6834; --lot-3: #1baf7a; --lot-4: #eda100;
+    --lot-5: #e87ba4; --lot-6: #008300; --lot-7: #6250d6; --lot-8: #7d7a72;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink-1: #f0efec;
+      --ink-2: #c3c2b7;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255,255,255,0.10);
+      --weekend: rgba(255,255,255,0.03);
+      --off: rgba(255,255,255,0.07);
+      --crit: #e66767;
+      --late-bg: rgba(250,178,25,0.13);
+      --late: #fab219;
+      --link: #6b6a64;
+      --today: #f0efec;
+      --lot-1: #3987e5; --lot-2: #d95926; --lot-3: #199e70; --lot-4: #c98500;
+      --lot-5: #d55181; --lot-6: #008300; --lot-7: #9085e9; --lot-8: #9a978d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 28px 40px;
+    background: var(--page); color: var(--ink-1);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  h1 { font-size: 20px; margin: 0 0 2px; font-weight: 600; }
+  .sub { color: var(--ink-2); margin: 0 0 20px; }
+
+  /* Tableau de bord */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .label { color: var(--ink-2); font-size: 13px; }
+  .tile .value { font-size: 32px; font-weight: 600; line-height: 1.15; margin: 4px 0 6px; }
+  .tile .detail { color: var(--ink-2); font-size: 13px; }
+  .tile .detail b { color: var(--ink-1); font-weight: 600; }
+  .meter { height: 8px; border-radius: 4px; background: var(--grid); position: relative; margin: 8px 0 6px; }
+  .meter .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--lot-1); }
+  .meter .mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink-1); border-radius: 1px; }
+  .warn-ico { color: var(--late); }
+  .late-list { margin: 6px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--ink-2); }
+  .late-list li { margin: 2px 0; }
+
+  /* Gantt */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 0 8px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 16px 12px; font-size: 13px; color: var(--ink-2); align-items: center; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend .sep { width: 1px; height: 16px; background: var(--grid); }
+  .scroll { overflow-x: auto; }
+  svg { display: block; font-family: inherit; }
+  svg text { fill: var(--ink-1); }
+  .t-muted { fill: var(--muted); }
+  .t-2 { fill: var(--ink-2); }
+  .row-hit { fill: transparent; cursor: default; }
+  .row-hit:hover { fill: var(--off); }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 10; display: none;
+    background: var(--surface); color: var(--ink-1); border: 1px solid var(--border);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.14); border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; min-width: 240px; max-width: 320px;
+  }
+  .tooltip .tt-title { font-weight: 600; margin-bottom: 4px; }
+  .tooltip table { border-collapse: collapse; width: 100%; }
+  .tooltip td { padding: 1px 0; vertical-align: top; }
+  .tooltip td:first-child { color: var(--ink-2); padding-right: 12px; white-space: nowrap; }
+  .tooltip td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .note { color: var(--ink-2); font-size: 12px; margin-top: 14px; max-width: 900px; }
+</style>
+</head>
+<body>
+
+<h1>Maison Dupont — rénovation complète</h1>
+<p class="sub" id="sub"></p>
+
+<section class="tiles" id="tiles"></section>
+
+<section class="card">
+  <div class="legend" id="legend"></div>
+  <div class="scroll" id="scroll"><svg id="gantt" role="img" aria-label="Diagramme de Gantt du chantier"></svg></div>
+</section>
+
+<p class="note" id="note"></p>
+<div class="tooltip" id="tt"></div>
+
+<script>
+/* ------------------------------------------------------------------
+   Données issues de planning.xlsx (onglet « Planning »).
+   Pour mettre à jour : modifier ce tableau (dates AAAA-MM-JJ, avancement 0 à 1).
+------------------------------------------------------------------- */
+const TASKS = [
+  { id: 1,  name: "Installation de chantier",        lot: "Gros œuvre",  start: "2026-09-07", end: "2026-09-11", preds: [],        progress: 1 },
+  { id: 2,  name: "Démolitions intérieures",         lot: "Gros œuvre",  start: "2026-09-14", end: "2026-09-25", preds: [1],       progress: 1 },
+  { id: 3,  name: "Reprise en sous-œuvre",           lot: "Gros œuvre",  start: "2026-09-28", end: "2026-10-16", preds: [2],       progress: 1 },
+  { id: 4,  name: "Dalle et réseaux enterrés",       lot: "Gros œuvre",  start: "2026-10-19", end: "2026-10-30", preds: [3],       progress: 0.8 },
+  { id: 5,  name: "Charpente et couverture",         lot: "Charpente",   start: "2026-10-12", end: "2026-11-06", preds: [2],       progress: 0.5 },
+  { id: 6,  name: "Menuiseries extérieures",         lot: "Menuiseries", start: "2026-11-09", end: "2026-11-20", preds: [5],       progress: 0 },
+  { id: 7,  name: "Électricité (gaines et tableau)", lot: "Électricité", start: "2026-11-02", end: "2026-11-20", preds: [4],       progress: 0 },
+  { id: 8,  name: "Plomberie (réseaux)",             lot: "Plomberie",   start: "2026-11-02", end: "2026-11-20", preds: [4],       progress: 0.1 },
+  { id: 9,  name: "Isolation et plaques de plâtre",  lot: "Plâtrerie",   start: "2026-11-23", end: "2026-12-18", preds: [6, 7, 8], progress: 0 },
+  { id: 10, name: "Chape",                           lot: "Sols",        start: "2027-01-04", end: "2027-01-08", preds: [9],       progress: 0 },
+  { id: 11, name: "Carrelage et parquet",            lot: "Sols",        start: "2027-01-11", end: "2027-01-29", preds: [10],      progress: 0 },
+  { id: 12, name: "Peintures",                       lot: "Peinture",    start: "2027-01-18", end: "2027-02-12", preds: [9],       progress: 0 },
+  { id: 13, name: "Appareillage et équipements",     lot: "Électricité", start: "2027-02-01", end: "2027-02-12", preds: [11],      progress: 0 },
+  { id: 14, name: "Nettoyage et réception",          lot: "Gros œuvre",  start: "2027-02-15", end: "2027-02-19", preds: [12, 13],  progress: 0 },
+];
+/* Congés du chantier (du 21/12 au 01/01 inclus) + jours fériés */
+const CONGES = [["2026-12-21", "2027-01-01"]];
+const FERIES = ["2026-11-01","2026-11-11","2026-12-25","2027-01-01","2027-03-29","2027-05-01","2027-05-06","2027-05-08","2027-05-17"];
+/* Tolérance avant de déclarer un retard d'avancement (10 points) */
+const TOLERANCE = 0.10;
+
+/* ---------------- Calendrier (jours entiers en UTC) ---------------- */
+const DAY = 86400000;
+const toDay = s => Math.round(Date.UTC(+s.slice(0,4), +s.slice(5,7) - 1, +s.slice(8,10)) / DAY);
+const now = new Date();
+const TODAY = Math.round(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / DAY);
+const OFF = new Set(FERIES.map(toDay));
+CONGES.forEach(([a, b]) => { for (let d = toDay(a); d <= toDay(b); d++) OFF.add(d); });
+const dow = d => new Date(d * DAY).getUTCDay();
+const isWeekend = d => dow(d) === 0 || dow(d) === 6;
+const isWork = d => !isWeekend(d) && !OFF.has(d);
+const nextWork = d => { while (!isWork(d)) d++; return d; };
+const prevWork = d => { while (!isWork(d)) d--; return d; };
+const workdays = (a, b) => { let n = 0; for (let d = a; d <= b; d++) if (isWork(d)) n++; return n; };
+const addWork = (start, n) => { let d = nextWork(start), c = 1; while (c < n) { d = nextWork(d + 1); c++; } return d; };   // n-ième jour ouvré
+const subWork = (end, n)   => { let d = prevWork(end),   c = 1; while (c < n) { d = prevWork(d - 1); c++; } return d; };
+
+const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const fmt = d => { const x = new Date(d * DAY); return String(x.getUTCDate()).padStart(2,"0") + "/" + String(x.getUTCMonth()+1).padStart(2,"0") + "/" + x.getUTCFullYear(); };
+const fmtLong = d => { const x = new Date(d * DAY); return x.getUTCDate() + " " + MOIS[x.getUTCMonth()] + " " + x.getUTCFullYear(); };
+const pct = v => Math.round(v * 100) + " %";
+const jo = n => n + (Math.abs(n) > 1 ? " jours ouvrés" : " jour ouvré");
+
+/* ---------------- Calculs ---------------- */
+const byId = {};
+const T = TASKS.map(t => {
+  const o = { ...t, s: toDay(t.start), e: toDay(t.end), succ: [] };
+  o.dur = workdays(o.s, o.e);
+  byId[o.id] = o;
+  return o;
+});
+T.forEach(t => t.preds.forEach(p => byId[p].succ.push(t.id)));
+const order = [...T].sort((a, b) => a.id - b.id);   // les prédécesseurs ont toujours un n° plus petit
+
+// Chemin critique (méthode CPM, liens fin-début, en jours ouvrés)
+order.forEach(t => {
+  t.ES = t.preds.length ? nextWork(Math.max(...t.preds.map(p => byId[p].EF)) + 1) : t.s;
+  t.EF = addWork(t.ES, t.dur);
+});
+const projEnd = Math.max(...T.map(t => t.EF));
+[...order].reverse().forEach(t => {
+  t.LF = t.succ.length ? prevWork(Math.min(...t.succ.map(s => byId[s].LS)) - 1) : projEnd;
+  t.LS = subWork(t.LF, t.dur);
+  t.float = t.LS > t.ES ? workdays(t.ES, t.LS) - 1 : 0;
+  t.critical = t.float === 0;
+});
+
+// Avancement attendu à aujourd'hui, retards
+T.forEach(t => {
+  t.expected = TODAY <= t.s ? 0 : Math.min(1, workdays(t.s, Math.min(t.e, TODAY - 1)) / t.dur);
+  t.overdue = t.progress < 1 && t.e < TODAY;                                       // échéance dépassée
+  t.behind  = !t.overdue && t.progress < 1 && t.progress < t.expected - TOLERANCE; // avancement insuffisant
+  t.late = t.overdue || t.behind;
+});
+
+// Prévision : le reste à faire est réalisé au rythme prévu à partir d'aujourd'hui
+order.forEach(t => {
+  const predEnd = t.preds.length ? Math.max(...t.preds.map(p => byId[p].fEnd)) : -Infinity;
+  if (t.progress >= 1) { t.fStart = t.s; t.fEnd = t.e; return; }
+  const rem = Math.max(1, Math.ceil(t.dur * (1 - t.progress) - 1e-9));
+  if (t.progress > 0) {                       // commencée : le reste démarre aujourd'hui
+    t.fStart = t.s;
+    t.fEnd = addWork(Math.max(TODAY, t.s), rem);
+  } else {                                    // pas commencée
+    t.fStart = nextWork(Math.max(t.s, TODAY, predEnd + 1));
+    t.fEnd = addWork(t.fStart, t.dur);
+  }
+});
+T.forEach(t => {
+  t.slip = t.fEnd > t.e ? workdays(t.e + 1, t.fEnd) : 0;
+  const blocking = t.preds.map(p => byId[p]).filter(p => p.progress < 1);
+  t.blockedBy = (t.s <= TODAY && t.progress < 1) ? blocking : [];
+});
+const planEnd = Math.max(...T.map(t => t.e));
+const foreEnd = Math.max(...T.map(t => t.fEnd));
+const endSlip = foreEnd > planEnd ? workdays(planEnd + 1, foreEnd) : 0;
+
+const totalDur = T.reduce((a, t) => a + t.dur, 0);
+const done = T.reduce((a, t) => a + t.dur * t.progress, 0) / totalDur;
+const expectedAll = T.reduce((a, t) => a + t.dur * t.expected, 0) / totalDur;
+const lateTasks = T.filter(t => t.late);
+const impacted = T.filter(t => !t.late && t.slip > 0);
+
+/* ---------------- Lots & couleurs ---------------- */
+const LOTS = [];
+T.forEach(t => { if (!LOTS.includes(t.lot)) LOTS.push(t.lot); });
+const lotVar = lot => `var(--lot-${LOTS.indexOf(lot) + 1})`;
+
+/* ---------------- Tableau de bord ---------------- */
+document.getElementById("sub").textContent =
+  `Planning du ${fmt(Math.min(...T.map(t => t.s)))} au ${fmt(planEnd)} · situation au ${fmtLong(TODAY)}`;
+
+const gap = Math.round((done - expectedAll) * 100);
+document.getElementById("tiles").innerHTML = `
+  <div class="tile">
+    <div class="label">Avancement global</div>
+    <div class="value">${pct(done)}</div>
+    <div class="meter" title="Trait noir : avancement attendu aujourd'hui">
+      <div class="fill" style="width:${done * 100}%"></div>
+      <div class="mark" style="left:calc(${expectedAll * 100}% - 1px)"></div>
+    </div>
+    <div class="detail">Attendu à ce jour : <b>${pct(expectedAll)}</b>
+      ${gap < 0 ? `(<span class="warn-ico">${gap} pts</span>)` : gap > 0 ? `(+${gap} pts)` : ""}
+      · pondéré par la durée des tâches</div>
+  </div>
+  <div class="tile">
+    <div class="label">Tâches en retard</div>
+    <div class="value">${lateTasks.length ? `<span class="warn-ico">⚠</span> ` : "✓ "}${lateTasks.length}</div>
+    <ul class="late-list">
+      ${lateTasks.map(t => `<li><b>n°${t.id}</b> ${t.name} — ${t.overdue
+          ? `échéance du ${fmt(t.e)} dépassée, ${pct(t.progress)} fait`
+          : `${pct(t.progress)} fait pour ${pct(t.expected)} attendu`}</li>`).join("") || "<li>Aucune</li>"}
+      ${impacted.length ? `<li>${impacted.length} autres tâches décalées par effet domino</li>` : ""}
+    </ul>
+  </div>
+  <div class="tile">
+    <div class="label">Date de fin prévue</div>
+    <div class="value">${fmt(planEnd)}</div>
+    <div class="detail">${endSlip
+      ? `<span class="warn-ico">⚠</span> Projection avec les retards actuels : <b>${fmt(foreEnd)}</b> (+${jo(endSlip)})`
+      : `Projection avec l'avancement actuel : <b>${fmt(foreEnd)}</b> — dans les temps`}</div>
+  </div>`;
+
+/* ---------------- Légende ---------------- */
+document.getElementById("legend").innerHTML =
+  LOTS.map(l => `<span><span class="sw" style="background:${lotVar(l)}"></span>${l}</span>`).join("") +
+  `<span class="sep"></span>
+   <span><svg width="26" height="12" style="display:inline;vertical-align:-1px;margin-right:6px"><rect x="1" y="1" width="24" height="10" rx="3" fill="none" stroke="var(--crit)" stroke-width="2"/></svg>Chemin critique</span>
+   <span><svg width="26" height="12" style="display:inline;vertical-align:-1px;margin-right:6px"><rect x="1" y="1" width="24" height="10" rx="3" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="3 2"/></svg>Glissement prévu</span>
+   <span><span class="sw" style="background:var(--late-badge)"></span>En retard</span>
+   <span><svg width="14" height="14" style="display:inline;vertical-align:-2px;margin-right:6px"><line x1="7" y1="0" x2="7" y2="14" stroke="var(--today)" stroke-width="2"/></svg>Aujourd'hui</span>`;
+
+/* ---------------- Diagramme ---------------- */
+const NS = "http://www.w3.org/2000/svg";
+const el = (name, attrs, parent, text) => {
+  const n = document.createElementNS(NS, name);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+function draw() {
+  const svg = document.getElementById("gantt");
+  svg.innerHTML = "";
+  const LABEL_W = 330, ROW = 40, HEAD = 50, BAR = 16, PAD_R = 70;
+  const first = Math.min(...T.map(t => t.s)), last = Math.max(foreEnd, planEnd);
+  const d0 = (() => { const x = new Date(first * DAY); return Math.round(Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), 1) / DAY); })();
+  const d1 = (() => { const x = new Date(last * DAY); return Math.round(Date.UTC(x.getUTCFullYear(), x.getUTCMonth() + 1, 1) / DAY); })();
+  const nDays = d1 - d0;
+  const avail = document.getElementById("scroll").clientWidth - LABEL_W - PAD_R;
+  const DW = Math.max(5, avail / nDays);
+  const W = LABEL_W + nDays * DW + PAD_R, H = HEAD + T.length * ROW + 8;
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const X = d => LABEL_W + (d - d0) * DW;
+  const rowY = i => HEAD + i * ROW;
+  const midY = i => rowY(i) + ROW / 2;
+
+  const defs = el("defs", {}, svg);
+  [["arr", "var(--link)"], ["arr-crit", "var(--crit)"]].forEach(([id, c]) => {
+    const m = el("marker", { id, viewBox: "0 0 8 8", refX: 7, refY: 4, markerWidth: 7, markerHeight: 7, orient: "auto" }, defs);
+    el("path", { d: "M0,0 L8,4 L0,8 z", fill: c }, m);
+  });
+  const clip = el("clipPath", { id: "plot" }, defs);
+  el("rect", { x: LABEL_W, y: 0, width: W - LABEL_W, height: H }, clip);
+
+  // Fonds : retards, week-ends, congés
+  const bg = el("g", {}, svg);
+  order.forEach((t, i) => { if (t.late) el("rect", { x: 0, y: rowY(i), width: W, height: ROW, fill: "var(--late-bg)" }, bg); });
+  for (let d = d0; d < d1; d++) {
+    if (OFF.has(d) && !isWeekend(d)) el("rect", { x: X(d), y: HEAD, width: DW, height: H - HEAD, fill: "var(--off)" }, bg);
+    else if (isWeekend(d)) el("rect", { x: X(d), y: HEAD, width: DW, height: H - HEAD, fill: "var(--weekend)" }, bg);
+  }
+  CONGES.forEach(([a, b]) => {
+    const xa = X(toDay(a)), xb = X(toDay(b) + 1);
+    el("text", { x: (xa + xb) / 2, y: H - 10, "text-anchor": "middle", class: "t-muted", "font-size": 11 }, bg, "Congés");
+  });
+
+  // En-tête : mois + semaines
+  const head = el("g", {}, svg);
+  for (let d = d0; d < d1; d++) {
+    const x = new Date(d * DAY);
+    if (x.getUTCDate() === 1) {
+      el("line", { x1: X(d), x2: X(d), y1: 6, y2: H, stroke: "var(--axis)", "stroke-width": 1 }, head);
+      const lbl = MOIS[x.getUTCMonth()] + (x.getUTCMonth() === 0 || d === d0 ? " " + x.getUTCFullYear() : "");
+      el("text", { x: X(d) + 6, y: 20, "font-size": 13, "font-weight": 600 }, head, lbl.charAt(0).toUpperCase() + lbl.slice(1));
+    }
+    if (dow(d) === 1) {
+      el("line", { x1: X(d), x2: X(d), y1: 30, y2: H, stroke: "var(--grid)", "stroke-width": 1 }, head);
+      if (DW * 7 >= 26) el("text", { x: X(d) + 3, y: 42, "font-size": 11, class: "t-muted", style: "font-variant-numeric:tabular-nums" }, head, x.getUTCDate());
+    }
+  }
+  el("line", { x1: 0, x2: W, y1: HEAD - 0.5, y2: HEAD - 0.5, stroke: "var(--axis)" }, head);
+  el("text", { x: 14, y: 42, "font-size": 12, class: "t-muted" }, head, "N°  Tâche · lot");
+  el("text", { x: LABEL_W - 14, y: 42, "font-size": 12, class: "t-muted", "text-anchor": "end" }, head, "Fait");
+  order.forEach((t, i) => i && el("line", { x1: 0, x2: W, y1: rowY(i), y2: rowY(i), stroke: "var(--grid)", "stroke-opacity": 0.6 }, head));
+
+  // Colonne des libellés
+  const lab = el("g", {}, svg);
+  order.forEach((t, i) => {
+    if (t.critical) el("rect", { x: 0, y: rowY(i) + 4, width: 3, height: ROW - 8, rx: 1.5, fill: "var(--crit)" }, lab);
+    el("text", { x: 14, y: midY(i) - 3, "font-size": 12, class: "t-muted", style: "font-variant-numeric:tabular-nums" }, lab, t.id);
+    el("text", { x: 38, y: midY(i) - 3, "font-size": 13, "font-weight": t.late ? 600 : 400 }, lab, t.name);
+    const sub = el("text", { x: 38, y: midY(i) + 12, "font-size": 11, class: "t-2" }, lab);
+    el("tspan", { fill: lotVar(t.lot) }, sub, "● ");
+    el("tspan", {}, sub, t.lot);
+    if (t.late) el("tspan", { fill: "var(--late)", "font-weight": 600 }, sub, t.overdue ? "  ⚠ Échéance dépassée" : "  ⚠ Retard d'avancement");
+    el("text", { x: LABEL_W - 14, y: midY(i) + 4, "font-size": 13, "text-anchor": "end", style: "font-variant-numeric:tabular-nums",
+                 "font-weight": t.late ? 600 : 400, fill: t.late ? "var(--late)" : "var(--ink-1)" }, lab, pct(t.progress));
+  });
+  el("line", { x1: LABEL_W - 0.5, x2: LABEL_W - 0.5, y1: 30, y2: H, stroke: "var(--axis)" }, lab);
+
+  const plot = el("g", { "clip-path": "url(#plot)" }, svg);
+
+  // Flèches de dépendance (liens critiques dessinés en dernier, par-dessus)
+  const links = [];
+  order.forEach((t, i) => t.preds.forEach(pid => {
+    const p = byId[pid], j = order.indexOf(p);
+    const crit = p.critical && t.critical && t.ES === nextWork(p.EF + 1);
+    links.push({ p, t, i, j, crit });
+  }));
+  links.sort((a, b) => a.crit - b.crit).forEach(({ p, t, i, j, crit }) => {
+    const xe = X(p.e + 1), xs = X(t.s), ye = midY(j), ys = midY(i) - (i > j ? BAR / 2 : -BAR / 2);
+    let d;
+    if (xs - xe >= 10) {
+      const xm = xe + Math.min(8, (xs - xe) / 2);
+      d = `M${xe},${ye} H${xm} V${midY(i)} H${xs - 1}`;
+    } else {
+      const yb = rowY(Math.max(i, j));
+      d = `M${xe},${ye} H${xe + 6} V${yb} H${xs - 8} V${midY(i)} H${xs - 1}`;
+    }
+    el("path", { d, fill: "none", stroke: crit ? "var(--crit)" : "var(--link)", "stroke-width": crit ? 2 : 1.25,
+                 "marker-end": `url(#${crit ? "arr-crit" : "arr"})`, "stroke-linejoin": "round" }, plot);
+  });
+
+  // Barres
+  order.forEach((t, i) => {
+    const y = midY(i) - BAR / 2, x = X(t.s), w = X(t.e + 1) - x;
+    const g = el("g", {}, plot);
+    if (t.slip > 0) {   // glissement prévu
+      const xf = X(t.fEnd + 1);
+      const xp = X(t.e + 1) - 5;
+      el("rect", { x: xp + 0.75, y: y + 0.75, width: xf - xp - 1.5, height: BAR - 1.5, rx: 4, fill: "none",
+                   stroke: t.late ? "var(--late)" : "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "4 3" }, g);
+      el("text", { x: xf + 6, y: midY(i) + 4, "font-size": 11, fill: t.late ? "var(--late)" : "var(--ink-2)",
+                   "font-weight": t.late ? 600 : 400 }, g, "+" + t.slip + " j");
+    }
+    el("rect", { x, y, width: w, height: BAR, rx: 4, fill: lotVar(t.lot), "fill-opacity": 0.28 }, g);
+    if (t.progress > 0) el("rect", { x, y, width: w * t.progress, height: BAR, rx: 4, fill: lotVar(t.lot) }, g);
+    if (t.critical) el("rect", { x: x - 1.5, y: y - 1.5, width: w + 3, height: BAR + 3, rx: 5.5, fill: "none", stroke: "var(--crit)", "stroke-width": 2 }, g);
+    if (!t.slip) el("text", { x: X(t.e + 1) + 6, y: midY(i) + 4, "font-size": 11, class: "t-2" }, g, t.progress >= 1 ? "✓" : "");
+  });
+
+  // Ligne d'aujourd'hui
+  if (TODAY >= d0 && TODAY < d1) {
+    const xt = X(TODAY);
+    el("line", { x1: xt, x2: xt, y1: 28, y2: H, stroke: "var(--today)", "stroke-width": 2 }, svg);
+    const label = "Aujourd'hui " + fmt(TODAY).slice(0, 5);
+    const bgw = label.length * 6.4 + 12;
+    el("rect", { x: xt - bgw / 2, y: 26, width: bgw, height: 18, rx: 9, fill: "var(--today)" }, svg);
+    el("text", { x: xt, y: 39, "font-size": 11, "font-weight": 600, "text-anchor": "middle", fill: "var(--surface)", style: "fill:var(--surface)" }, svg, label);
+  }
+
+  // Zones de survol (ligne entière) + infobulle
+  const tt = document.getElementById("tt");
+  order.forEach((t, i) => {
+    const hit = el("rect", { x: 0, y: rowY(i), width: W, height: ROW, class: "row-hit" }, svg);
+    hit.addEventListener("mousemove", ev => {
+      const rows = [
+        ["Lot", t.lot],
+        ["Prévu", `${fmt(t.s)} → ${fmt(t.e)}`],
+        ["Durée", jo(t.dur)],
+        ["Avancement", `${pct(t.progress)}${t.s < TODAY && t.progress < 1 ? ` (attendu ${pct(t.expected)})` : ""}`],
+        ["Prédécesseurs", t.preds.length ? t.preds.map(p => "n°" + p).join(", ") : "—"],
+        ["Marge totale", t.critical ? "0 — chemin critique" : jo(t.float)],
+      ];
+      if (t.progress < 1) rows.push(["Fin projetée", `${fmt(t.fEnd)}${t.slip ? ` (+${t.slip} j)` : ""}`]);
+      let html = `<div class="tt-title">n°${t.id} · ${t.name}</div><table>${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table>`;
+      if (t.late) html += `<div style="margin-top:6px;color:var(--late);font-weight:600">⚠ ${t.overdue ? "Échéance dépassée" : "Retard d'avancement"}</div>`;
+      if (t.blockedBy.length) html += `<div style="margin-top:4px;color:var(--ink-2)">Attend la fin de ${t.blockedBy.map(p => "n°" + p.id).join(", ")}</div>`;
+      tt.innerHTML = html;
+      tt.style.display = "block";
+      const r = tt.getBoundingClientRect();
+      let lx = ev.clientX + 16, ly = ev.clientY + 14;
+      if (lx + r.width > innerWidth - 8) lx = ev.clientX - r.width - 16;
+      if (ly + r.height > innerHeight - 8) ly = ev.clientY - r.height - 14;
+      tt.style.left = lx + "px"; tt.style.top = ly + "px";
+    });
+    hit.addEventListener("mouseleave", () => tt.style.display = "none");
+  });
+}
+draw();
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(draw, 100); });
+
+document.getElementById("note").innerHTML =
+  `Chemin critique calculé à partir des enchaînements fin → début et des durées en jours ouvrés (week-ends, jours fériés et congés exclus). ` +
+  `Une tâche est <b>en retard</b> si son échéance est passée sans être terminée, ou si son avancement a plus de ${Math.round(TOLERANCE*100)} points de retard sur l'attendu à ce jour. ` +
+  `La projection suppose que le reste à faire est réalisé au rythme prévu à partir d'aujourd'hui, puis reporte les décalages sur les tâches suivantes. ` +
+  `Survolez une ligne pour le détail.`;
+</script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Devis n° 2026-118 annoté</title>
+<style>
+  :root {
+    --bleu: #2c5a8a;
+    --texte: #1d2530;
+    --gris: #5d6672;
+    --ligne: #dfe3e8;
+    --alerte: #fff1d6;
+    --alerte-bord: #e0a020;
+    --rouge: #b3261e;
+    --vert: #1f7a3d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    color: var(--texte);
+    background: #f3f4f6;
+    line-height: 1.45;
+  }
+  .page { max-width: 1250px; margin: 0 auto; padding: 24px; }
+
+  /* Bandeau total en trop */
+  .bandeau {
+    background: var(--rouge);
+    color: #fff;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .bandeau .etiquette { font-size: 1.1rem; opacity: .9; }
+  .bandeau .montant { font-size: 3.4rem; font-weight: 700; line-height: 1.1; margin: 4px 0 10px; }
+  .bandeau .detail { font-size: .98rem; opacity: .95; }
+  .bandeau table { border-collapse: collapse; margin-top: 12px; font-size: .95rem; }
+  .bandeau td { padding: 2px 18px 2px 0; }
+  .bandeau td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Feuille du devis */
+  .feuille {
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    padding: 32px 36px;
+  }
+  .entete { display: flex; justify-content: space-between; gap: 24px; border-bottom: 3px solid var(--bleu); padding-bottom: 10px; }
+  .entete h1 { color: var(--bleu); margin: 0 0 4px; font-size: 1.6rem; }
+  .entete .petit { font-size: .82rem; color: var(--gris); }
+  .entete .ref { text-align: right; }
+  .exemple { background: #fff7d1; border: 1px solid #e7cf7a; padding: 6px 10px; font-size: .82rem; margin: 14px 0; }
+  .parties { display: flex; gap: 24px; margin: 14px 0 20px; }
+  .parties > div { flex: 1; }
+  h2 { margin: 6px 0 2px; font-size: 1.35rem; }
+  .sous { font-size: .85rem; color: var(--gris); margin-bottom: 14px; }
+
+  table.devis { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  table.devis th {
+    background: var(--bleu); color: #fff; text-align: left;
+    padding: 8px; font-weight: 600; font-size: .88rem;
+  }
+  table.devis th.remarque-col { background: var(--rouge); }
+  table.devis td { padding: 8px; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+  table.devis td.num, table.devis th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.devis td.c, table.devis th.c { text-align: center; }
+  table.devis td.remarque { width: 36%; font-size: .88rem; color: var(--texte); }
+
+  tr.probleme > td:not(.remarque) { background: var(--alerte); }
+  tr.probleme > td:first-child { border-left: 5px solid var(--alerte-bord); }
+  tr.probleme td.remarque { background: #fdf6e8; border-left: 1px solid var(--alerte-bord); }
+  .surcout { display: inline-block; background: var(--rouge); color: #fff; font-weight: 700; border-radius: 4px; padding: 1px 7px; margin-bottom: 4px; }
+  .faux { text-decoration: line-through; text-decoration-color: var(--rouge); text-decoration-thickness: 2px; }
+  .corrige { color: var(--vert); font-weight: 700; }
+
+  table.totaux { margin-left: auto; margin-top: 14px; border-collapse: collapse; font-size: 1rem; width: 100%; }
+  table.totaux td { padding: 6px 8px; vertical-align: top; }
+  table.totaux td.lib { text-align: left; width: 22%; }
+  table.totaux td.num { text-align: right; white-space: nowrap; width: 14%; font-variant-numeric: tabular-nums; }
+  table.totaux td.vide { width: 28%; }
+  table.totaux td.remarque { width: 36%; font-size: .88rem; }
+  table.totaux tr.probleme td.lib, table.totaux tr.probleme td.num { background: var(--alerte); }
+  table.totaux tr.probleme td.remarque { background: #fdf6e8; border-left: 1px solid var(--alerte-bord); }
+  table.totaux tr.ttc td.lib, table.totaux tr.ttc td.num { font-weight: 700; font-size: 1.2rem; border-top: 2px solid var(--bleu); }
+
+  .mentions { font-size: .85rem; color: var(--gris); margin-top: 20px; }
+  .mentions p { margin: 2px 0; }
+  .mentions .probleme-inline { background: var(--alerte); border-left: 5px solid var(--alerte-bord); padding: 6px 8px; color: var(--texte); margin: 4px 0; }
+  .signatures { display: flex; justify-content: space-between; font-size: .9rem; margin-top: 24px; }
+
+  /* Récap & doutes */
+  .bloc { background: #fff; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 22px 28px; margin-top: 24px; }
+  .bloc h3 { margin-top: 0; }
+  .bloc table { border-collapse: collapse; width: 100%; max-width: 640px; }
+  .bloc td, .bloc th { padding: 6px 8px; border-bottom: 1px solid var(--ligne); text-align: left; }
+  .bloc td.num, .bloc th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bloc li { margin-bottom: 8px; }
+  .doute { border-left: 5px solid #8a96a3; }
+
+  @media (max-width: 900px) {
+    .page { padding: 10px; }
+    .feuille { padding: 18px; }
+    .bandeau .montant { font-size: 2.4rem; }
+    table.devis td.remarque { width: auto; }
+  }
+  @media print {
+    body { background: #fff; }
+    .feuille, .bloc { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===================== TOTAL EN TROP ===================== -->
+  <section class="bandeau">
+    <div class="etiquette">Ce que vous paieriez en trop si vous signez ce devis tel quel</div>
+    <div class="montant">2 356,50 € TTC</div>
+    <div class="detail">
+      Total TTC demandé : <strong>9 877,20 €</strong> → total TTC corrigé : <strong>7 520,70 €</strong>
+      (soit près de 24 % de trop). Uniquement des erreurs prouvables avec le devis lui-même :
+    </div>
+    <table>
+      <tr><td>TVA calculée à 20 % au lieu des 10 % annoncés</td><td class="num">823,10 €</td></tr>
+      <tr><td>Ligne 3 : 18 m² de parquet en trop (53 m² au lieu de 35 m²), TVA comprise</td><td class="num">1 148,40 €</td></tr>
+      <tr><td>Lignes 10 et 12 : évacuation des déchets facturée deux fois, TVA comprise</td><td class="num">385,00 €</td></tr>
+    </table>
+  </section>
+
+  <!-- ===================== LE DEVIS ===================== -->
+  <section class="feuille">
+    <div class="entete">
+      <div>
+        <h1>Rénov' Habitat Martin</h1>
+        <div>12 rue des Artisans, 69003 Lyon</div>
+        <div class="petit">SARL au capital de 10 000 € · SIRET 000 000 000 00000 · TVA FR00000000000</div>
+        <div class="petit">Assurance décennale n° 0000000, Assureur Exemple, couverture France métropolitaine</div>
+      </div>
+      <div class="ref">
+        <div>Devis n° 2026-118</div>
+        <div>Date : 14/10/2026</div>
+        <div>Validité : 3 mois</div>
+      </div>
+    </div>
+
+    <div class="exemple">DEVIS D'EXEMPLE · entreprise, client et chiffres fictifs</div>
+
+    <div class="parties">
+      <div>
+        <strong>Client</strong><br>
+        M. et Mme Exemple<br>
+        8 avenue des Tilleuls, 69006 Lyon
+      </div>
+      <div>
+        <strong>Logement</strong><br>
+        Appartement de 1978 (plus de 2 ans)<br>
+        Séjour 24 m² · chambre 11 m² · cuisine 8 m²
+      </div>
+    </div>
+
+    <h2>Rénovation du séjour, de la chambre et de la cuisine</h2>
+    <div class="sous">Début des travaux prévu le 16/11/2026 · durée estimée : 3 semaines</div>
+
+    <table class="devis">
+      <thead>
+        <tr>
+          <th class="c">N°</th>
+          <th>Désignation</th>
+          <th class="c">Unité</th>
+          <th class="num">Qté</th>
+          <th class="num">PU HT</th>
+          <th class="num">Total HT</th>
+          <th class="remarque-col">Remarque</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="c">1</td><td>Protection des sols, des menuiseries et du mobilier</td>
+          <td class="c">forfait</td><td class="num">1</td><td class="num">180,00 €</td><td class="num">180,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr>
+          <td class="c">2</td><td>Dépose du revêtement de sol existant (séjour et chambre)</td>
+          <td class="c">m²</td><td class="num">35</td><td class="num">12,00 €</td><td class="num">420,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr class="probleme">
+          <td class="c">3</td><td>Fourniture et pose de parquet contrecollé chêne, séjour et chambre</td>
+          <td class="c">m²</td><td class="num">53</td><td class="num">58,00 €</td><td class="num">3 074,00 €</td>
+          <td class="remarque">
+            <span class="surcout">+ 1 044,00 € HT (1 148,40 € TTC)</span><br>
+            <strong>Quantité gonflée.</strong> Séjour 24 m² + chambre 11 m² = <strong>35 m²</strong>, chiffre que le devis
+            utilise lui-même à la ligne 2 (dépose du sol, séjour et chambre) et à la ligne 6 (plafonds).
+            On dépose 35 m², mais on en repose 53 : 18 m² de plus, soit +51 %.
+            Même avec 10 % de marge pour les chutes (38,5 m²), il resterait 14,5 m² de trop (841 € HT).
+            Correction : 35 × 58 € = <span class="corrige">2 030,00 € HT</span>.
+          </td>
+        </tr>
+        <tr>
+          <td class="c">4</td><td>Fourniture et pose de plinthes chêne assorties</td>
+          <td class="c">ml</td><td class="num">32</td><td class="num">9,00 €</td><td class="num">288,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr>
+          <td class="c">5</td><td>Peinture des murs du séjour, deux couches, finition velours</td>
+          <td class="c">m²</td><td class="num">48</td><td class="num">24,00 €</td><td class="num">1 152,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr>
+          <td class="c">6</td><td>Peinture des plafonds, séjour et chambre</td>
+          <td class="c">m²</td><td class="num">35</td><td class="num">26,00 €</td><td class="num">910,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr>
+          <td class="c">7</td><td>Cuisine : dépose de la faïence murale</td>
+          <td class="c">m²</td><td class="num">9</td><td class="num">18,00 €</td><td class="num">162,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr>
+          <td class="c">8</td><td>Cuisine : pose de faïence (fournie par le client)</td>
+          <td class="c">m²</td><td class="num">9</td><td class="num">65,00 €</td><td class="num">585,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr>
+          <td class="c">9</td><td>Remplacement des prises et interrupteurs</td>
+          <td class="c">u</td><td class="num">12</td><td class="num">45,00 €</td><td class="num">540,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr class="probleme">
+          <td class="c">10</td><td>Évacuation des gravats et déchets de chantier</td>
+          <td class="c">forfait</td><td class="num">1</td><td class="num">350,00 €</td><td class="num">350,00 €</td>
+          <td class="remarque">
+            <strong>Même prestation que la ligne 12</strong> (voir ci-dessous). On garde l'une des deux.
+          </td>
+        </tr>
+        <tr>
+          <td class="c">11</td><td>Nettoyage de fin de chantier</td>
+          <td class="c">forfait</td><td class="num">1</td><td class="num">220,00 €</td><td class="num">220,00 €</td>
+          <td class="remarque"></td>
+        </tr>
+        <tr class="probleme">
+          <td class="c">12</td><td>Enlèvement des déchets et mise en déchetterie</td>
+          <td class="c">forfait</td><td class="num">1</td><td class="num">350,00 €</td><td class="num">350,00 €</td>
+          <td class="remarque">
+            <span class="surcout">+ 350,00 € HT (385,00 € TTC)</span><br>
+            <strong>Doublon de la ligne 10.</strong> Évacuer les déchets du chantier, c'est les enlever et les
+            emmener en déchetterie : même objet, même forfait, même prix (350 €).
+            Les déchets ne s'évacuent qu'une fois. Correction : supprimer cette ligne.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="totaux">
+      <tr>
+        <td class="vide"></td>
+        <td class="lib">Total HT</td><td class="num">8 231,00 €</td>
+        <td class="remarque">Addition exacte des 12 lignes.
+          Une fois corrigé (lignes 3 et 12) : <span class="corrige">6 837,00 € HT</span>.</td>
+      </tr>
+      <tr class="probleme">
+        <td class="vide"></td>
+        <td class="lib">TVA 10 %</td><td class="num">1 646,20 €</td>
+        <td class="remarque">
+          <span class="surcout">+ 823,10 €</span><br>
+          <strong>Mauvais calcul.</strong> 10 % de 8 231,00 € = <strong>823,10 €</strong>.
+          Le montant inscrit (1 646,20 €) correspond à <strong>20 %</strong>, alors que le libellé et la mention
+          en bas de page annoncent 10 % (taux correct pour un logement de plus de 2 ans).
+          Sur le HT corrigé : <span class="corrige">683,70 €</span>.
+        </td>
+      </tr>
+      <tr class="probleme ttc">
+        <td class="vide"></td>
+        <td class="lib">Total TTC</td><td class="num">9 877,20 €</td>
+        <td class="remarque">
+          <span class="surcout">+ 2 356,50 € au total</span><br>
+          Avec la seule erreur de TVA corrigée : 9 054,10 €.<br>
+          Avec toutes les corrections : <span class="corrige">7 520,70 € TTC</span>.
+        </td>
+      </tr>
+    </table>
+
+    <div class="mentions">
+      <p>Taux réduit de 10 % : travaux d'amélioration dans un logement achevé depuis plus de deux ans.</p>
+      <p class="probleme-inline">
+        Conditions de paiement : acompte de 30 % à la signature (2 963,16 €), solde à la réception des travaux, par virement.<br>
+        <strong>→ Remarque :</strong> l'acompte est calculé sur le TTC erroné. 30 % du TTC corrigé = <span class="corrige">2 256,21 €</span>,
+        soit 706,95 € de trop versés dès la signature (ce montant fait partie des 2 356,50 €, il ne s'y ajoute pas).
+      </p>
+      <p>Devis gratuit. Les prix s'entendent fournitures et main-d'œuvre comprises, sauf mention contraire.</p>
+    </div>
+
+    <div class="signatures">
+      <div>L'entreprise</div>
+      <div>Bon pour accord, date et signature du client</div>
+    </div>
+  </section>
+
+  <!-- ===================== RECAP CORRIGÉ ===================== -->
+  <section class="bloc">
+    <h3>Le devis corrigé en un coup d'œil</h3>
+    <table>
+      <tr><th></th><th class="num">Devis reçu</th><th class="num">Corrigé</th><th class="num">Écart</th></tr>
+      <tr><td>Ligne 3 : parquet</td><td class="num">3 074,00 €</td><td class="num">2 030,00 €</td><td class="num">−1 044,00 €</td></tr>
+      <tr><td>Ligne 12 : doublon déchets</td><td class="num">350,00 €</td><td class="num">0,00 €</td><td class="num">−350,00 €</td></tr>
+      <tr><td><strong>Total HT</strong></td><td class="num">8 231,00 €</td><td class="num">6 837,00 €</td><td class="num">−1 394,00 €</td></tr>
+      <tr><td>TVA 10 %</td><td class="num">1 646,20 €</td><td class="num">683,70 €</td><td class="num">−962,50 €</td></tr>
+      <tr><td><strong>Total TTC</strong></td><td class="num"><strong>9 877,20 €</strong></td><td class="num"><strong>7 520,70 €</strong></td><td class="num"><strong>−2 356,50 €</strong></td></tr>
+      <tr><td>Acompte 30 %</td><td class="num">2 963,16 €</td><td class="num">2 256,21 €</td><td class="num">−706,95 €</td></tr>
+    </table>
+  </section>
+
+  <!-- ===================== DOUTES ===================== -->
+  <section class="bloc doute">
+    <h3>Simples doutes, à demander à l'artisan (non comptés dans le total ci-dessus)</h3>
+    <ul>
+      <li><strong>Amiante (immeuble de 1978).</strong> Pour un bâtiment dont le permis de construire date d'avant juillet 1997,
+        un repérage amiante avant travaux est obligatoire dès qu'on touche aux matériaux. Ici, on dépose le revêtement de sol (ligne 2)
+        et la faïence (ligne 7), dont les colles anciennes peuvent en contenir. Rien n'est prévu au devis : demandez qui s'en charge.
+        C'est normalement au donneur d'ordre (vous) de le faire réaliser.</li>
+      <li><strong>Les murs de la chambre ne sont pas peints.</strong> Le titre parle de « rénovation de la chambre » et son plafond est peint (ligne 6),
+        mais la ligne 5 ne concerne que les murs du séjour. Oubli ou choix de votre part ? Si c'est un oubli, ça reviendra en supplément.</li>
+      <li><strong>Préparation des supports non mentionnée :</strong> rebouchage/enduit/ponçage avant peinture, ragréage et sous-couche sous le parquet,
+        dépose des anciennes plinthes, seuils/barres de transition, rabotage des portes (le nouveau parquet peut les faire frotter).
+        C'est peut-être inclus dans les prix unitaires : faites-le écrire pour éviter un avenant.</li>
+      <li><strong>Faïence fournie par vous (ligne 8) :</strong> la colle et les joints sont-ils compris dans les 65 €/m² ?</li>
+      <li><strong>Quantités plausibles mais invérifiables sans plan :</strong> plinthes 32 ml, murs du séjour 48 m², faïence 9 m².
+        Elles collent avec des pièces de 24 et 11 m² et environ 2,50 m de hauteur sous plafond. Un coup de mètre suffit pour vérifier.</li>
+      <li><strong>Électricité (ligne 9) :</strong> simple changement d'appareillage, ou mise aux normes ? Précisez-le, surtout dans un logement de 1978.</li>
+    </ul>
+  </section>
+
+</div>
+</body>
+</html>
